@@ -558,12 +558,15 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
       <label for="sumDays" style="margin-top:0">Period</label>
       <select id="sumDays"><option value="30">Last 30 days</option><option value="90" selected>Last 3 months</option><option value="182">Last 6 months</option><option value="365">Last 12 months</option><option value="0">Everything</option></select>
       <div class="row" style="margin-top:12px">
-        <a class="btnlink primary mail" id="mailGmail" data-via="gmail" href="https://mail.google.com/" target="_blank" rel="noopener"><span class="em">✉️</span> Gmail</a>
-        <a class="btnlink primary mail" id="mailOutlook" data-via="outlook" href="https://outlook.live.com/" target="_blank" rel="noopener"><span class="em">✉️</span> Outlook</a>
+        <button class="primary" id="sendPdf"><span class="em">📄</span> Send PDF report</button>
+        <button id="dlPdf"><span class="em">⬇️</span> Download PDF</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <a class="btnlink mail" id="mailOther" data-via="other" href="mailto:" target="_blank" rel="noopener" style="background:var(--panel2)"><span class="em">✉️</span> Other email app</a>
-        <button id="shareDoc" class="hidden"><span class="em">📤</span> Share with file…</button>
+      <div id="pdfHelp" class="note hidden"></div>
+      <div class="subhead" style="margin-top:14px">Or send as text in the email</div>
+      <div class="row" style="margin-top:8px">
+        <a class="btnlink mail" id="mailGmail" data-via="gmail" href="https://mail.google.com/" target="_blank" rel="noopener" style="background:var(--panel2);color:var(--text)"><span class="em">✉️</span> Gmail</a>
+        <a class="btnlink mail" id="mailOutlook" data-via="outlook" href="https://outlook.live.com/" target="_blank" rel="noopener" style="background:var(--panel2);color:var(--text)"><span class="em">✉️</span> Outlook</a>
+        <a class="btnlink mail" id="mailOther" data-via="other" href="mailto:" target="_blank" rel="noopener" style="background:var(--panel2);color:var(--text)"><span class="em">✉️</span> Other</a>
       </div>
       <div id="emailHelp" class="note hidden"></div>
       <div class="row" style="margin-top:10px">
@@ -1620,6 +1623,113 @@ $("#saveSettings").onclick=()=>{
 $("#addStep").onclick=()=>{ const l=readStepRows(); const last=l.length?l[l.length-1].min:0; l.push({min:last+1,text:""}); renderStepRows(l); const ins=document.querySelectorAll(".stTxt"); ins[ins.length-1].focus(); };
 
 // ---------- export ----------
+// ---------- PDF report (no libraries; standard Helvetica) ----------
+const PDF_W = {
+  R:"278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500",
+  B:"278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556"
+};
+const PDF_WN = {R:PDF_W.R.split(",").map(Number), B:PDF_W.B.split(",").map(Number)};
+const PDF_MAP = {"–":150,"—":151,"•":149,"×":215,"‘":145,"’":146,"“":147,"”":148,"…":133,"€":128,"→":187};
+function pdfEnc(t){ let o=""; for(const ch of String(t??"")){ const c=ch.codePointAt(0);
+  o += PDF_MAP[ch]!==undefined ? String.fromCharCode(PDF_MAP[ch]) : (c>=32&&c<256&&!(c>=127&&c<160)) ? ch : (c===10?" ":"?"); } return o; }
+function pdfWidth(t, size, bold){ const w=bold?PDF_WN.B:PDF_WN.R; let n=0; for(const ch of pdfEnc(t)){ n+=w[ch.charCodeAt(0)-32]||556; } return n*size/1000; }
+function pdfWrap(text, size, bold, maxW){
+  const out=[]; String(text??"").split("\n").forEach(par=>{
+    let line=""; par.split(/\s+/).filter(Boolean).forEach(word=>{
+      const tryL=line?line+" "+word:word;
+      if(pdfWidth(tryL,size,bold)<=maxW){ line=tryL; return; }
+      if(line) out.push(line);
+      while(pdfWidth(word,size,bold)>maxW){ let k=word.length; while(k>1&&pdfWidth(word.slice(0,k),size,bold)>maxW) k--; out.push(word.slice(0,k)); word=word.slice(k); }
+      line=word; });
+    out.push(line); });
+  return out.length?out:[""];
+}
+function buildPdf(daysArg){
+  const days=daysArg===undefined?sumDays():daysArg, list=(days?within(days):[...seizures]).sort((a,b)=>b.start-a.start);
+  const W=595.28, H=841.89, M=40, CW=W-2*M, pages=[]; let ops=[], y=0;
+  const esc=t=>pdfEnc(t).replace(/[\\()]/g,m=>"\\"+m);
+  const rgb=h=>[1,3,5].map(i=>(parseInt(h.slice(i,i+2),16)/255).toFixed(3)).join(" ");
+  const text=(t,x,yy,size,{bold=false,color="#1b2140"}={})=>ops.push(`BT /${bold?"F2":"F1"} ${size} Tf ${rgb(color)} rg ${x.toFixed(2)} ${(H-yy).toFixed(2)} Td (${esc(t)}) Tj ET`);
+  const rect=(x,yy,w,h,fill)=>ops.push(`${rgb(fill)} rg ${x.toFixed(2)} ${(H-yy-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+  const line=(x1,y1,x2,y2,color="#d9dcef",wd=0.6)=>ops.push(`${rgb(color)} RG ${wd} w ${x1.toFixed(2)} ${(H-y1).toFixed(2)} m ${x2.toFixed(2)} ${(H-y2).toFixed(2)} l S`);
+  const PURPLE="#5b3fd8", MUTED="#5d6385", SHADE="#f3f1fd";
+  const newPage=(first)=>{ if(ops.length) pages.push(ops); ops=[];
+    if(first){ rect(0,0,W,92,PURPLE); text("Seizure report",M,44,22,{bold:true,color:"#ffffff"});
+      text(`${settings.name||"Child"}  ·  ${periodLabel(days).replace(/^./,c=>c.toUpperCase())}, to ${fmtDate(Date.now())}`,M,70,11,{color:"#e6e0ff"}); y=118; }
+    else { rect(0,0,W,30,PURPLE); text(`Seizure report – ${settings.name||"Child"} (continued)`,M,20,10,{bold:true,color:"#ffffff"}); y=56; } };
+  const need=h=>{ if(y+h>H-50) newPage(false); };
+  const heading=t=>{ need(40); text(t.toUpperCase(),M,y,10,{bold:true,color:PURPLE}); y+=8; line(M,y,M+CW,y,PURPLE,1); y+=8; };
+  newPage(true);
+
+  // details
+  const det=[["Name",settings.name||"–"],["Age / date of birth",settings.age||"–"],["Report period",`${periodLabel(days).replace(/^./,c=>c.toUpperCase())}, to ${fmtDate(Date.now())}`]];
+  const kv=(rows)=>rows.forEach(([k,v],i)=>{ const lines=pdfWrap(v,10,false,CW-180), h=8+lines.length*13;
+    need(h); if(i%2===0) rect(M,y,CW,h,SHADE);
+    text(k,M+8,y+14,10,{bold:true,color:MUTED}); lines.forEach((l,j)=>text(l,M+180,y+14+j*13,10)); y+=h; });
+  heading("Details"); kv(det); y+=18;
+
+  // summary
+  heading("Summary");
+  const durs=list.map(s=>s.durationSec||0), n=list.length, long=sec=>{ sec=Math.round(sec||0); const m=Math.floor(sec/60), r=sec%60; return m?`${m} min ${r} sec`:`${r} sec`; };
+  const cnt=(arr)=>{ const c={}; arr.forEach(x=>c[x]=(c[x]||0)+1); return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} (${v})`).join(", "); };
+  const sumRows=[["Seizures recorded",String(n)]];
+  if(n){
+    sumRows.push(["Average length",long(durs.reduce((a,b)=>a+b,0)/n)],["Longest",long(Math.max(...durs))],["Shortest",long(Math.min(...durs))]);
+    const types=cnt(list.map(s=>s.type).filter(Boolean)); if(types) sumRows.push(["Types",types]);
+    const sev=list.filter(s=>s.severity); if(sev.length) sumRows.push(["Average severity",`${(sev.reduce((a,s)=>a+ +s.severity,0)/sev.length).toFixed(1)} out of 5`]);
+    sumRows.push(["VNS magnet used",`${list.filter(s=>s.vns).length} of ${n} seizures`],["Rescue medication given",`${list.filter(s=>s.rescueMed).length} of ${n} seizures`]);
+    const amb=list.filter(s=>(s.actions||[]).some(a=>/999|ambulance/i.test(a))).length; if(amb) sumRows.push(["999 / ambulance",`${amb} of ${n} seizures`]);
+    const trig=cnt(list.flatMap(s=>s.triggers||[])); if(trig) sumRows.push(["Possible triggers",trig]);
+  }
+  kv(sumRows); y+=18;
+
+  // each seizure
+  if(n){
+    heading("Each seizure (newest first)");
+    const cols=[["Date & time",78],["Length",50],["Type",72],["Sev.",28],["VNS magnet",70],["Rescue med",60],["Seen, actions & notes",CW-358]];
+    const hdr=()=>{ rect(M,y,CW,20,PURPLE); let x=M; cols.forEach(([t,w])=>{ text(t,x+4,y+13.5,8.5,{bold:true,color:"#ffffff"}); x+=w; }); y+=20; };
+    need(60); hdr();
+    list.forEach((s,i)=>{
+      const vns=s.vns?`${s.vnsCount>1?s.vnsCount+" swipes":"1 swipe"}${(s.vnsAtSec||[]).length?" at "+s.vnsAtSec.map(fmtDur).join(", "):""}`:"No";
+      const med=s.rescueMed?`Yes${s.rescueAtSec!=null?" at "+fmtDur(s.rescueAtSec):""}`:"No";
+      const det=[(s.signs||[]).length?"Seen: "+s.signs.join(", "):"",(s.actions||[]).length?"Actions: "+s.actions.join(", "):"",
+        (s.triggers||[]).length?"Triggers: "+s.triggers.join(", "):"", s.recoveryMin?`Recovery: ${s.recoveryMin} min`:"",
+        s.notes?"Notes: "+s.notes:"", (s.videos||[]).length?`Video: ${s.videos.length} clip${s.videos.length>1?"s":""} (on request)`:""].filter(Boolean).join("\n")||"–";
+      const cells=[`${new Date(s.start).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}\n${fmtTime(s.start)}`, fmtDur(s.durationSec), s.type||"–", s.severity?String(s.severity):"–", vns, med, det];
+      const wrapped=cells.map((c,j)=>pdfWrap(c,8.5,false,cols[j][1]-8)), h=Math.max(...wrapped.map(w=>w.length))*11+10;
+      if(y+h>H-50){ newPage(false); hdr(); }
+      if(i%2===1) rect(M,y,CW,h,SHADE);
+      let x=M; wrapped.forEach((ls,j)=>{ ls.forEach((l,k)=>text(l,x+4,y+13+k*11,8.5,{bold:j===0&&k===0})); x+=cols[j][1]; });
+      y+=h; line(M,y,M+CW,y);
+    });
+    y+=12;
+  }
+  need(30); pdfWrap("Times shown as m:ss are from the start of the seizure. Video clips are kept on the carer's phone and can be shared on request. Recorded with Seizure Tracker by the child's family and carers; not a clinical record.",8,false,CW).forEach(l=>{ text(l,M,y+8,8,{color:MUTED}); y+=11; });
+  pages.push(ops);
+
+  // assemble
+  const total=pages.length, gen=`${fmtDate(Date.now())} ${fmtTime(Date.now())}`;
+  pages.forEach((p,i)=>{ ops=p; line(M,H-34,M+CW,H-34); text(`Seizure Tracker  ·  Generated ${gen}`,M,H-22,8,{color:MUTED});
+    const pg=`Page ${i+1} of ${total}`; text(pg,M+CW-pdfWidth(pg,8,false),H-22,8,{color:MUTED}); });
+  const objs=[], add=s=>{ objs.push(s); return objs.length; };
+  add("<< /Type /Catalog /Pages 2 0 R >>"); add(""); 
+  add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids=[];
+  pages.forEach(p=>{ const c=p.join("\n"); const ci=add(`<< /Length ${c.length} >>\nstream\n${c}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${ci} 0 R >>`)); });
+  objs[1]=`<< /Type /Pages /Kids [${kids.map(k=>k+" 0 R").join(" ")}] /Count ${kids.length} >>`;
+  const info=add(`<< /Title (${esc("Seizure report – "+(settings.name||"child"))}) /Producer (Seizure Tracker) >>`);
+  let out="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n"; const offs=[];
+  objs.forEach((o,i)=>{ offs.push(out.length); out+=`${i+1} 0 obj\n${o}\nendobj\n`; });
+  const xref=out.length;
+  out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(o=>String(o).padStart(10,"0")+" 00000 n \n").join("");
+  out+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  const bytes=new Uint8Array(out.length); for(let i=0;i<out.length;i++) bytes[i]=out.charCodeAt(i)&255;
+  return bytes;
+}
+function pdfName(){ return `seizure-report-${(settings.name||"child").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"child"}-${today()}.pdf`; }
+
 function sumDays(){ const v=parseInt($("#sumDays").value); return isNaN(v)?90:v; }
 function periodLabel(d){ return d===0?"all records":d===30?"last 30 days":d===90?"last 3 months":d===182?"last 6 months":d===365?"last 12 months":`last ${d} days`; }
 function summaryText(daysArg){
@@ -1691,12 +1801,16 @@ document.querySelectorAll("a.mail").forEach(a=>a.addEventListener("click",()=>{
     : `The email opens ready to send${e.to?` to <b>${esc(e.to)}</b>`:""} – sign in first if asked.`+(e.to?"":` Add the doctor's email in Settings to fill in the address automatically.`);
 }));
 $("#sumDays").addEventListener("change",refreshMailLinks);
-const canShareFiles=(()=>{ try{ return !!(navigator.canShare && navigator.canShare({files:[new File(["x"],"t.csv",{type:"text/csv"})]})); }catch{ return false; } })();
-if(canShareFiles) $("#shareDoc").classList.remove("hidden");
-$("#shareDoc").onclick=async()=>{
-  const e=emailParts(), f=new File([csv()],`seizure-log-${today()}.csv`,{type:"text/csv"});
-  try{ await navigator.share({title:e.subject, text:`${e.subject}\n\n${summaryText()}`, files:[f]}); }
-  catch(err){ if(err && err.name!=="AbortError") toast("Sharing isn't available here – use Email or Download"); }
+const canSharePdf=(()=>{ try{ return !!(navigator.canShare && navigator.canShare({files:[new File(["x"],"t.pdf",{type:"application/pdf"})]})); }catch{ return false; } })();
+async function downloadPdf(){ if(await saveFile(pdfName(), buildPdf(), "application/pdf")) toast("PDF saved to Downloads"); else toast("Couldn't save the PDF here"); }
+$("#dlPdf").onclick=downloadPdf;
+$("#sendPdf").onclick=async()=>{
+  const e=emailParts(), who=settings.name||"my child", h=$("#pdfHelp");
+  if(!canSharePdf){ await downloadPdf(); h.innerHTML="This browser can't attach files directly, so the PDF has been downloaded – attach it to an email from your Downloads."; h.classList.remove("hidden"); return; }
+  const f=new File([buildPdf()], pdfName(), {type:"application/pdf"});
+  h.innerHTML=`Pick <b>Gmail</b> (or your email app). The PDF will be attached${e.to?` – add <b>${esc(e.to)}</b> as the recipient`:""}.`; h.classList.remove("hidden");
+  try{ await navigator.share({title:e.subject, text:`Hello,\n\nPlease find attached the seizure report for ${who} (${periodLabel(sumDays())}).\n`, files:[f]}); }
+  catch(err){ if(err && err.name!=="AbortError"){ toast("Sharing didn't work – downloading instead"); downloadPdf(); } }
 };
 $("#copySummary").onclick=async()=>{
   const txt=summaryText(), out=$("#summaryOut"); out.value=txt; out.classList.remove("hidden");
