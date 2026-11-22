@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a2f6e">
+<title>Seizure Tracker (draft design)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#171b38; --panel:#232955; --panel2:#2e3566; --line:#3d4580;
+  --text:#f2f3f7; --muted:#9aa1b2; --red:#e5484d; --red2:#ff6b6f;
+  --amber:#f5a524; --green:#3dd68c; --blue:#5b8def;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;border-radius:14px;padding:12px 16px;background:var(--panel2)}
+button:active{transform:scale(.98)}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 96px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+header h1{font-size:20px;margin:0}
+header .sub{color:var(--muted);font-size:13px}
+.note{font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:10px 12px;margin:10px 0}
+.note.warn{color:#ffd28a;border-color:#5a4520}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.big-start{display:block;width:100%;padding:34px 16px;font-size:26px;font-weight:800;
+  background:var(--red);color:#fff;border-radius:24px;box-shadow:0 8px 30px rgba(229,72,77,.35)}
+.big-start small{display:block;font-size:14px;font-weight:500;opacity:.9;margin-top:6px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats.two{grid-template-columns:repeat(2,1fr)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.presets .lbl{color:var(--muted);font-size:14px;margin-right:2px}
+.stat{background:var(--panel2);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:12px;color:var(--muted)}
+.list-item{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}
+.list-item:first-child{border-top:0}
+.list-item .t{font-weight:600}
+.list-item .m{color:var(--muted);font-size:13px}
+.dur{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.dur.long{color:var(--red2)}
+.empty{color:var(--muted);text-align:center;padding:18px 0}
+nav{position:fixed;left:0;right:0;bottom:0;background:#101217ee;border-top:1px solid var(--line);
+  display:flex;justify-content:center;padding:8px 8px calc(8px + env(safe-area-inset-bottom));backdrop-filter:blur(8px)}
+nav .in{display:flex;gap:6px;max-width:560px;width:100%}
+nav button{flex:1;background:transparent;color:var(--muted);font-size:13px;padding:8px 4px}
+nav button.on{color:var(--text);background:var(--panel2)}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+textarea{min-height:80px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 12px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:14px}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.primary{background:var(--blue);color:#fff;font-weight:700}
+.btnlink{display:block;text-align:center;text-decoration:none;color:#fff;font-weight:700;border-radius:14px;padding:12px 16px}
+.danger{background:transparent;color:var(--red2);border:1px solid #5a2a2c}
+.ghost{background:transparent;border:1px solid var(--line)}
+.hidden{display:none!important}
+
+/* Timer screen */
+#timer{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));transition:background .4s}
+#timer.amber{background:#2a1f0a}
+#timer.alarm{background:#3a0d10;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{background:#5a1216}}
+#timer .top{display:flex;justify-content:space-between;color:var(--muted);font-size:14px}
+#clock{font-size:min(34vw,240px);font-weight:900;text-align:center;font-variant-numeric:tabular-nums;
+  letter-spacing:-.04em;margin:10px 0 4px;line-height:.95;white-space:nowrap}
+#clock.long{font-size:min(24vw,170px)}
+#clockSub{text-align:center;color:var(--muted)}
+#alertBox{margin:16px 0;padding:14px;border-radius:16px;background:#5a1216;border:2px solid var(--red2);font-weight:700;font-size:18px;text-align:center}
+#alertBox .plan{font-weight:500;font-size:15px;margin-top:6px;white-space:pre-wrap}
+#planBox{margin:14px 0;padding:12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:14px;white-space:pre-wrap}
+#timer{overflow-y:auto}
+#timer.alarm #clock{font-size:min(21vw,130px)}
+#timer.alarm #clockSub{display:none}
+#timer.alarm .events{display:none}
+#timer.alarm #alertPlan{font-size:14px;margin-top:4px}
+#timer.alarm #alertBox{margin:8px 0;padding:12px}
+#timer.alarm .actions{gap:8px}
+#timer.alarm .actions button{padding:8px 6px;font-size:15px}
+#timer.alarm .actions .ico{font-size:22px;margin-bottom:3px}
+#timer.alarm #stopBtn{padding:16px!important;font-size:20px}
+#timer.alarm .subrow{margin-top:4px}
+#timer.alarm #mid{flex:0 0 auto}
+#alertBox .opLink{width:100%}
+#timer .events{flex:none;max-height:16vh;overflow:auto;font-size:14px;color:var(--muted);margin:6px 0}
+#mid{flex:1 0 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center}
+#clockSub{white-space:pre-line;font-size:17px;line-height:1.45}
+.subrow{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+#recovBtn{background:transparent;border:1px solid var(--line);padding:8px 12px;font-size:14px}
+.rp svg{width:100%;height:auto;background:#262a35;border-radius:14px}
+.rp ol{padding-left:22px;margin:12px 0;font-size:17px;line-height:1.45}
+.rp li{margin-bottom:8px}
+#timer .events div{padding:4px 0}
+#timer .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#timer .actions button{padding:12px 8px;font-weight:700;line-height:1.2}
+#timer .actions .ico{display:block;font-size:30px;line-height:1;margin-bottom:6px}
+#vnsBtn{background:#3a2f6b}
+#recBtn{background:#2b3345}
+#opBtn{background:#1f4a3a}
+.op{font-size:19px;line-height:1.45}
+.op b{color:#fff}
+.op .addr{display:block;font-size:21px;line-height:1.35;letter-spacing:.01em;padding:2px 0}
+.op .li{display:block}
+.op .mrow{padding:6px 0;border-bottom:1px solid var(--line)}
+.op .mrow:last-child{border-bottom:0}
+.op .ml{display:block;color:var(--muted);font-size:13px}
+.op .k{color:var(--muted);font-size:14px;display:block;margin-top:10px}
+#alertBox .opLink{display:block;margin-top:8px;background:#fff2;color:#fff;font-weight:700}
+#recBtn.on{background:var(--red);color:#fff}
+#camWrap{position:relative;margin:10px 0 0;border-radius:16px;overflow:hidden;background:#000;flex:none}
+#camWrap video{width:100%;max-height:34vh;display:block;object-fit:cover}
+#recDot{position:absolute;top:8px;left:8px;background:#e5484dd9;color:#fff;font-weight:700;padding:4px 10px;border-radius:999px;font-size:13px}
+#camFlip{position:absolute;top:6px;right:6px;padding:6px 10px;background:#000a;font-size:13px;border-radius:10px}
+.vidrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}
+.vidrow span{flex:1 1 100%;font-size:14px}
+.vidrow button{padding:8px 12px;font-size:14px}
+.player{position:relative;margin-top:10px}
+.player video{width:100%;border-radius:12px;background:#000}
+.player .el{position:absolute;top:8px;right:8px;background:#000b;color:#fff;padding:3px 8px;border-radius:8px;font-size:13px;font-weight:700}
+#tAlarmAt{background:var(--panel2);border-radius:999px;padding:4px 10px;color:var(--text)}
+#cancelBtn{background:transparent;color:var(--muted);padding:4px 0;font-size:14px;text-decoration:underline}
+#stopBtn{grid-column:1/-1;background:var(--green);color:#0b1f14;font-size:22px;padding:24px!important}
+.call{display:block;text-align:center;margin-top:10px;color:#fff;background:var(--red);border-radius:14px;padding:14px;font-weight:800;text-decoration:none}
+
+/* Modal */
+#modal{position:fixed;inset:0;z-index:60;background:#000a;display:flex;align-items:flex-end;justify-content:center}
+#modal .sheet{background:var(--panel);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;
+  padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
+#modal h3{margin:0 0 6px;font-size:20px}
+.dialog-btns{display:flex;gap:10px;margin-top:18px}
+.dialog-btns button{flex:1}
+#toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top));transform:translateX(-50%);background:#000;color:#fff;
+  padding:10px 16px;border-radius:12px;z-index:80;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+svg text{fill:var(--muted);font-size:10px}
+
+/* ---------- icons: one consistent size relative to the text ---------- */
+.em{display:inline-block;font-size:1.3em;line-height:1;vertical-align:-0.14em;margin-right:.08em}
+.big-start .em{font-size:1.15em;vertical-align:-0.1em}
+.list-item .m .em{font-size:1.25em}
+.chip .em{font-size:1.2em}
+nav .em{font-size:1.3em}
+/* ================= Professional theme (draft) ================= */
+:root{
+  --bg:#0b1220; --panel:#111a2e; --panel2:#18233c; --line:#24314f; --line2:#2e3d60;
+  --text:#e8edf7; --muted:#8e9ab3; --faint:#5f6b85;
+  --accent:#4c8dff; --accent-2:#3b74e0; --red:#e5484d; --red2:#ff6369; --green:#2fbf71; --amber:#f0a429; --violet:#8b7bff; --pink:#e5679b; --teal:#2bb3a3;
+  --r-lg:16px; --r-md:12px; --r-sm:10px;
+}
+html,body{background:var(--bg)}
+body{font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-feature-settings:"tnum" 1,"cv11" 1;letter-spacing:-.005em;-webkit-font-smoothing:antialiased}
+.wrap{padding:12px 16px 104px}
+svg.i{width:1.15em;height:1.15em;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.em{font-size:1em!important;margin:0!important;vertical-align:0!important}
+
+/* App bar */
+header{background:none;box-shadow:none;border-radius:0;padding:6px 0 14px;margin-bottom:6px;border-bottom:1px solid var(--line);gap:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(145deg,#4c8dff,#2f63d6);display:grid;place-items:center;color:#fff;flex:none;box-shadow:0 4px 12px rgba(76,141,255,.3)}
+.logo svg.i{width:22px;height:22px;stroke-width:2.2}
+header h1{font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+header .sub{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;margin-top:2px}
+header .sub::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);flex:none}
+header .sub.ok::before{background:var(--green)}
+header .ghost{background:var(--panel2);border:1px solid var(--line2);color:var(--text);font-weight:600;font-size:13.5px!important;display:inline-flex;align-items:center;gap:6px;padding:9px 12px!important;border-radius:var(--r-sm)}
+
+/* Primary action */
+.big-start{background:var(--red);border-radius:var(--r-lg);padding:22px 20px;box-shadow:0 10px 28px rgba(229,72,77,.28),inset 0 1px 0 rgba(255,255,255,.15);display:flex;align-items:center;gap:16px;text-align:left;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.big-start .bs-ic{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.16);display:grid;place-items:center;flex:none}
+.big-start .bs-ic svg.i{width:30px;height:30px;stroke-width:2.2}
+.big-start small{font-size:13.5px;font-weight:500;opacity:.88;margin-top:3px}
+
+/* Cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:none;padding:16px}
+.card h2{color:var(--muted)!important;font-size:12px;font-weight:600;letter-spacing:.08em;margin-bottom:12px}
+.stats{gap:10px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-md);text-align:left;padding:12px 12px 10px}
+.stat b{color:var(--text);font-size:24px;font-weight:700;letter-spacing:-.02em}
+.stat span{color:var(--muted);font-size:12px}
+.stat .k-ic{display:block;color:var(--sc,var(--accent));margin-bottom:6px}
+.stat:has(#s7){--sc:var(--teal)} .stat:has(#s30){--sc:var(--accent)} .stat:has(#sLast){--sc:var(--muted)}
+.stat:has(#sAvg){--sc:var(--amber)} .stat:has(#sMax){--sc:var(--red2)} .stat:has(#sVns){--sc:var(--violet)} .stat:has(#sRescue){--sc:var(--pink)}
+
+/* Lists */
+.list-item{border-top:1px solid var(--line);padding:13px 0;align-items:center}
+.list-item .t{font-weight:600;font-size:15px}
+.list-item .t::before{display:none}
+.list-item .m{margin-top:5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--muted);font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--panel2);border:1px solid var(--line2);color:var(--text)}
+.pill svg.i{width:13px;height:13px}
+.pill.vns{color:#c3baff;border-color:#4a4290;background:#231f4a}
+.pill.med{color:#ffb3d0;border-color:#7a3653;background:#3a1c2b}
+.pill.vid{color:#a9c8ff;border-color:#2e4f8f;background:#162746}
+.dur{font-size:16px;font-weight:700;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px}
+.dur.long{color:#fff;background:#5a1d22;border-color:#8a2c33}
+
+/* Forms & controls */
+input,select,textarea{background:#0e1628;border:1px solid var(--line2);border-radius:var(--r-sm)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+label{font-weight:500;color:var(--muted)}
+.primary,nav button.on,.chip.on{background:var(--accent)!important;color:#fff}
+.primary{border-radius:var(--r-sm);font-weight:600}
+button{border-radius:var(--r-sm)}
+.row>button,.btnlink{font-weight:600}
+.btnlink{display:flex!important;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-sm)}
+.chip{background:var(--panel2);border:1px solid var(--line2);font-size:13.5px}
+.note{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:var(--r-sm)}
+.note.warn{background:#2c2212;border-color:#5b4420;color:#f3cf8f}
+.danger{border-color:#5a2a2c}
+#modal{background:rgba(5,9,18,.72);backdrop-filter:blur(4px);z-index:70}
+#modal .sheet{background:var(--panel);border-top:1px solid var(--line2);box-shadow:0 -12px 40px rgba(0,0,0,.4)}
+#modal .sheet::before{content:"";display:block;width:40px;height:4px;border-radius:4px;background:var(--line2);margin:-6px auto 12px}
+#modal h3{font-size:19px;font-weight:700;letter-spacing:-.01em}
+
+/* Bottom navigation */
+nav{background:rgba(11,18,32,.94);border-top:1px solid var(--line);backdrop-filter:blur(10px);padding-top:6px}
+nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--faint);padding:6px 4px;border-radius:var(--r-sm)}
+nav button svg.i{width:22px;height:22px}
+nav button.on{background:transparent!important;color:var(--accent)!important}
+
+/* Timer */
+#timer{background:var(--bg)}
+#timer.amber{background:#1f1708}
+#timer.alarm{background:#2a0b0e;animation:pulse2 1.4s infinite}
+@keyframes pulse2{50%{background:#3d0f14}}
+#clock{color:#fff;background:none;-webkit-background-clip:initial;background-clip:initial;font-weight:800;letter-spacing:-.05em}
+#clockSub{color:var(--muted);font-size:16px}
+#tAlarmAt{background:var(--panel2);border:1px solid var(--line2);font-size:13px;font-weight:600;padding:5px 11px}
+#timer .top{align-items:center}
+#planBox{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--r-sm);font-size:14px}
+#timer .actions{gap:10px}
+#timer .actions button{background:var(--panel)!important;border:1px solid var(--line2);color:var(--text);font-weight:600;font-size:15px;border-radius:var(--r-md);padding:14px 8px}
+#timer .actions .ico{display:grid;place-items:center;width:40px;height:40px;margin:0 auto 7px;border-radius:11px;background:color-mix(in srgb,var(--bc) 18%,transparent);color:var(--bc)}
+#timer .actions .ico svg.i{width:22px;height:22px}
+#recBtn{--bc:var(--teal)} #opBtn{--bc:var(--green)} #vnsBtn{--bc:var(--violet)} #medBtn{--bc:var(--pink)} #markBtn{--bc:var(--accent)}
+#recBtn.on{background:#3a1216!important;border-color:var(--red)!important;--bc:var(--red2)}
+#markBtn{grid-column:1/-1}
+#muteBtn{display:block;width:100%;margin-top:8px;color:#fff;font-weight:700;font-size:17px;padding:13px}
+#muteBtn small{display:block;font-weight:500;font-size:13px;opacity:.85;margin-top:3px}
+#timer .actions #stopBtn,#stopBtn{font-size:21px;background:var(--green)!important;color:#05210f!important;border:0!important;font-weight:800;letter-spacing:.01em;box-shadow:0 8px 24px rgba(47,191,113,.25);display:flex;align-items:center;justify-content:center;gap:10px}
+#stopBtn svg.i{width:26px;height:26px;stroke-width:2.6}
+#recovBtn{background:var(--panel);border:1px solid var(--line2);font-weight:600;display:inline-flex;align-items:center;gap:8px}
+#cancelBtn{color:var(--faint)}
+#alertBox{background:#3d1015;border:1px solid #a5333b;border-radius:var(--r-lg);font-weight:700}
+#alertBox .call{background:var(--red);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;gap:10px}
+#alertBox .opLink{background:rgba(255,255,255,.1);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;gap:8px}
+#muteBtn{background:#5b3d0c!important;border:1px solid #9a6a18;border-radius:var(--r-md)}
+#muteBtn.off{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.2)}
+#timer.alarm .actions button{padding:9px 6px}
+#timer.alarm .actions .ico{width:30px;height:30px;margin-bottom:4px}
+#timer.alarm .actions .ico svg.i{width:18px;height:18px}
+.chart-wrap svg text{fill:var(--faint)}
+/* steps, cluster, recovery, patterns */
+#stepBox{margin:8px 0;padding:14px;border-radius:var(--r-md);background:#13284d;border:1px solid var(--accent);font-weight:700;font-size:18px;text-align:center}
+#stepBox .when{display:block;font-size:12px;font-weight:600;color:#9cc0ff;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+#stepBox .btns{display:flex;gap:8px;margin-top:10px}
+#stepBox .btns button{flex:1;font-weight:700}
+#timer .events{max-height:46px!important}
+#timer.prompting #planBox,#timer.prompting .events{display:none!important}
+#timer.prompting #clock{font-size:min(26vw,170px)}
+#timer.prompting #clockSub{display:none}
+#vnsBox{margin:8px 0;padding:12px 14px;border-radius:var(--r-md);background:#1e1a44;border:1px solid #4a4290;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+#vnsBox .vt{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#c3baff}
+#vnsBox .vc{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.05}
+#vnsBox .vs{font-size:13px;color:var(--muted);grid-column:1/-1}
+#vnsBox .bar{grid-column:1/-1;height:6px;border-radius:6px;background:#2d2866;overflow:hidden}
+#vnsBox .bar i{display:block;height:100%;background:var(--violet);border-radius:6px}
+#vnsBox button{grid-row:1/3;grid-column:2;padding:12px 14px;font-weight:700;background:var(--violet);color:#fff;border-radius:var(--r-sm);display:flex;align-items:center;gap:6px}
+#vnsBox.due{background:#3a2a8a;border-color:#a99cff;animation:vpulse 1s infinite}
+@keyframes vpulse{50%{background:#4b37b0}}
+#vnsBox.done{grid-template-columns:1fr}
+#vnsBtn:disabled{opacity:.55}
+#timer.vnsdue .events,#timer.vnsdue #clockSub{display:none!important}
+#nextStep{font-size:14px;color:var(--muted);text-align:center;margin-top:8px}
+#nextStep b{color:var(--text)}
+#clusterBox{margin:6px 0 0;padding:8px 12px;border-radius:999px;background:var(--panel2);border:1px solid var(--line2);font-size:13.5px;font-weight:600;text-align:center}
+#clusterBox.warn{background:#3d2a08;border-color:#9a6a18;color:#ffd58a}
+#soundHint{margin:6px auto 0;padding:6px 12px;border-radius:999px;background:#3d2a08;color:#ffd58a;font-size:13px;font-weight:600;width:max-content;max-width:100%}
+#recov{position:fixed;inset:0;z-index:55;background:var(--bg);display:flex;flex-direction:column;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#recov .top{display:flex;justify-content:space-between;color:var(--muted);font-size:14px}
+#recov .lbl{text-align:center;color:#7fe3b0;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px;margin-top:18px}
+#rClock{font-size:min(26vw,170px);font-weight:800;text-align:center;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+#rSub{text-align:center;color:var(--muted);margin-top:6px}
+#rCheck{margin:16px 0 4px;padding:14px;border-radius:var(--r-md);background:var(--panel);border:1px solid var(--line2)}
+#rCheck.due{background:#13284d;border-color:var(--accent)}
+#rCheck h4{margin:0 0 4px;font-size:17px}
+#rCheck p{margin:0 0 10px;color:var(--muted);font-size:14px}
+#rCheck .btns{display:flex;gap:8px}
+#rCheck .btns>*{flex:1}
+#rLog{font-size:13.5px;color:var(--muted);margin:8px 0;flex:1}
+#recov .acts{display:grid;gap:10px}
+#rDone{background:var(--green);color:#05210f;font-weight:800;font-size:19px;padding:18px;display:flex;align-items:center;justify-content:center;gap:10px}
+.callmini{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--red);color:#fff;text-decoration:none;font-weight:700;border-radius:var(--r-sm);padding:12px}
+.hbar{display:grid;grid-template-columns:120px 1fr 28px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.hbar .b{height:10px;border-radius:6px;background:var(--accent)}
+.hbar .n{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.steprow{display:grid;grid-template-columns:78px 1fr 40px;gap:8px;margin-bottom:8px;align-items:center}
+.steprow input{padding:10px}
+.steprow button{padding:10px 0;background:transparent;border:1px solid var(--line2);color:var(--muted)}
+.subhead{font-size:13px;color:var(--muted);margin:2px 0 10px}
+.nag{border-color:#5b4420!important;background:#241c0e!important}
+.nag h2{color:#f3cf8f!important}
+.ro-banner{background:#2c2212;border:1px solid #5b4420;color:#f3cf8f;border-radius:var(--r-sm);padding:10px 12px;font-size:13.5px;margin:8px 0}
+.by{font-size:13px;color:var(--muted);margin-top:2px}
+.who{color:#9cc0ff;font-weight:600}
+.stat.good b{color:#5fe0a0}
+.dayhdr{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:14px 0 4px}
+.dayhdr:first-child{padding-top:2px}
+.list-item{gap:12px!important}
+.list-item .tbar{display:block;width:4px;align-self:stretch;border-radius:4px;background:var(--tc);flex:none;margin:2px 0}
+.list-item .thumb{width:52px;height:52px;border-radius:10px;flex:none;background:var(--panel2) center/cover no-repeat;border:2px solid var(--tc)}
+.tname{font-weight:600;font-size:12.5px;color:var(--tc);background:color-mix(in srgb,var(--tc) 16%,transparent);padding:1px 7px;border-radius:999px;margin-left:4px;white-space:nowrap}
+.sev{font-size:9px;letter-spacing:1px;color:#ffb36b;margin-left:4px;vertical-align:2px;white-space:nowrap}
+.sev .off{color:var(--line2)}
+.tdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.fchip{display:inline-flex;align-items:center;font-size:13px!important;padding:6px 11px!important}
+.hbar{grid-template-columns:140px 1fr 66px!important}
+.hbar .n{white-space:nowrap}
+.sevpick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sevpick button{width:44px;height:44px;border-radius:12px;background:var(--panel2);border:1px solid var(--line2);font-weight:700;font-size:16px;padding:0}
+.sevpick button.on{background:#ffb36b;color:#2a1600;border-color:#ffb36b}
+.sevhint{font-size:12px;color:var(--muted)}
+.passprev h1{font-size:20px;margin:0}.passprev h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#3b5bb5;margin:16px 0 6px;border-bottom:1px solid #dfe5f0;padding-bottom:3px}
+.passprev .meta{color:#667085;margin:4px 0 10px;font-size:13px}.passprev .em{background:#fde8e8;border:2px solid #d92d20;border-radius:10px;padding:10px 12px;font-size:14px;color:#1d2433;display:block}
+.passprev table{border-collapse:collapse;width:100%;font-size:13.5px}.passprev th{text-align:left;vertical-align:top;width:36%;padding:5px 7px;background:#f4f6fb;border:1px solid #e3e8f2}.passprev td{padding:5px 7px;border:1px solid #e3e8f2}
+.passprev ul{padding-left:18px;margin:4px 0;font-size:14px}.passprev p{font-size:14px;margin:4px 0}.passprev svg{width:100%;height:auto}
+
+/* ================= Timer: always fits one screen, no scrolling ================= */
+#timer{height:100vh;height:100dvh;overflow:hidden;gap:clamp(4px,1vh,10px);padding:calc(10px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom))}
+#timer>*{flex:none;margin-top:0!important;margin-bottom:0!important}
+#timer #mid{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
+#timer #clock{font-size:min(30vw,17vh)!important;line-height:.92;margin:0}
+#timer.prompting #clock,#timer.vnsdue #clock,#timer.alarm #clock,#timer.recording #clock{font-size:min(22vw,11vh)!important}
+#timer #clockSub{font-size:clamp(12px,1.9vh,16px);line-height:1.35;margin-top:4px}
+#timer.prompting #clockSub,#timer.vnsdue #clockSub,#timer.alarm #clockSub,#timer.recording #clockSub{display:none}
+#timer #nextStep{font-size:clamp(12px,1.8vh,14px);margin-top:4px}
+#timer #soundHint{font-size:12px;padding:4px 10px;margin-top:4px}
+#timer .top{font-size:13px}
+#tAlarmAt{padding:4px 10px!important;font-size:12.5px!important}
+#clusterBox{padding:5px 10px!important;font-size:12.5px!important}
+#timer .events{max-height:none!important;overflow:hidden;font-size:13px;margin:0!important}
+#tEvents>div{display:none;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tEvents>div:last-child{display:block}
+#timer #planBox{padding:7px 10px;font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+#timer.prompting #planBox,#timer.vnsdue #planBox{display:none!important}
+#timer .actions{gap:8px}
+#timer .actions button{display:flex!important;align-items:center;justify-content:flex-start;gap:10px;text-align:left;padding:0 10px!important;height:clamp(44px,7.2vh,62px);font-size:clamp(13.5px,2vh,15.5px)!important;line-height:1.15}
+#timer .actions .ico{margin:0!important;width:clamp(30px,4.6vh,38px)!important;height:clamp(30px,4.6vh,38px)!important;flex:none}
+#timer .actions .ico svg.i{width:20px!important;height:20px!important}
+#timer #markBtn{justify-content:center}
+#timer .actions #stopBtn{justify-content:center!important;height:clamp(52px,8.6vh,74px);font-size:clamp(18px,2.8vh,22px)!important;padding:0!important}
+#timer .subrow{margin-top:0!important}
+#timer .subrow button{padding:6px 10px;font-size:13px}
+#vnsBox{padding:8px 12px!important}
+#vnsBox .vc{font-size:clamp(22px,3.6vh,30px)!important}
+#vnsBox button{padding:10px 12px!important}
+#stepBox{padding:10px 12px!important;font-size:16px!important}
+#stepBox .btns{margin-top:8px!important}
+#stepBox .btns button{padding:9px}
+#timer #alertBox{padding:10px 12px!important;font-size:15px;display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center}
+#alertBox>.em{display:none}
+#alertBox #alertText{grid-column:1/-1;font-size:15px}
+#alertBox #alertPlan{grid-column:1/-1;font-size:12.5px!important;font-weight:500;margin:0!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#alertBox .call,#alertBox .opLink{margin:0!important;padding:10px 6px!important;font-size:15px}
+#alertBox .opLink{font-size:13.5px!important;line-height:1.2}
+#alertBox>div[style*="font-size:12px"]{display:none}
+#alertBox #muteBtn{grid-column:1/-1;margin:0!important;padding:8px!important;font-size:15px!important}
+#alertBox #muteBtn small{display:inline;margin-left:4px;font-size:12px}
+#timer #camWrap video{max-height:22vh}
+/* progressive tightening when a phone is short on height */
+#timer.alarm #opBtn{display:none!important}
+#timer.alarm #markBtn{grid-column:auto}
+#timer.t1 #planBox,#timer.t1 .events,#timer.t1 #soundHint{display:none!important}
+#timer.t1 #alertBox #alertPlan{display:none}
+#timer.t1 #camWrap video{max-height:15vh}
+#timer.t2 .actions button{height:40px!important;font-size:13.5px!important}
+#timer.t2 .actions .ico{width:28px!important;height:28px!important}
+#timer.t2 .actions #stopBtn{height:48px!important;font-size:18px!important}
+#timer.t2 #clusterBox{font-size:12px!important;padding:3px 10px!important}
+#timer.t2 #clock{font-size:min(18vw,9vh)!important}
+#timer.t2 #vnsBox .vc{font-size:20px!important}
+#timer.t2 #vnsBox .vs{display:none}
+#timer.t3 .actions{grid-template-columns:repeat(3,1fr)!important}
+#timer.t3 #markBtn{grid-column:auto!important}
+#timer.t3 .actions button{flex-direction:column!important;justify-content:center!important;gap:2px!important;text-align:center!important;font-size:12px!important;height:52px!important;padding:2px 4px!important}
+#timer.t3 .actions .ico{width:24px!important;height:24px!important}
+#timer.t3 .actions #stopBtn{grid-column:1/-1;flex-direction:row!important;gap:10px!important;height:48px!important;font-size:18px!important}
+#timer.alarm.t3 .actions{grid-template-columns:repeat(4,1fr)!important}
+#timer.t3 .subrow{display:none!important}
+#timer.t3 #camWrap video{max-height:12vh}
+#recov{height:100vh;height:100dvh;overflow:hidden;gap:8px}
+#recov>*{flex:none}
+#rClock{font-size:min(26vw,15vh)!important}
+#rLog{flex:1 1 0!important;min-height:0;overflow:hidden}
+#recov .lbl{margin-top:6px!important}
+
+/* ================= Light theme (day) – timer & recovery always stay dark ================= */
+html[data-theme="light"]{color-scheme:light}
+html[data-theme="light"] body:not(.emergency){
+  --bg:#f2f5fb; --panel:#ffffff; --panel2:#f1f4fa; --line:#e3e8f1; --line2:#d4dcea;
+  --text:#15203a; --muted:#5d6a84; --faint:#8b97ae; --accent:#2f6fe4; --accent-2:#2559c4;
+  --violet:#6d5ce8; --pink:#d24f86; --teal:#119c8c; --green:#1fa463; --amber:#d98a0b; --red2:#e0434a;
+  background:var(--bg); color:var(--text);
+}
+html[data-theme="light"] body:not(.emergency) .card{box-shadow:0 1px 2px rgba(21,32,58,.05),0 6px 20px rgba(21,32,58,.06);border-color:#e6ebf3}
+html[data-theme="light"] body:not(.emergency) .stat{background:#f6f8fc}
+html[data-theme="light"] body:not(.emergency) input,html[data-theme="light"] body:not(.emergency) select,html[data-theme="light"] body:not(.emergency) textarea{background:#fff;border-color:var(--line2);color:var(--text)}
+html[data-theme="light"] body:not(.emergency) nav{background:rgba(255,255,255,.95);border-top-color:var(--line)}
+html[data-theme="light"] body:not(.emergency) .pill{background:#f1f4fa;border-color:var(--line2);color:var(--text)}
+html[data-theme="light"] body:not(.emergency) .pill.vns{color:#5443c9;border-color:#d5cffb;background:#f1efff}
+html[data-theme="light"] body:not(.emergency) .pill.med{color:#b23a6e;border-color:#f6cfe0;background:#fdf0f6}
+html[data-theme="light"] body:not(.emergency) .pill.vid{color:#2559c4;border-color:#cfdcf8;background:#eef3ff}
+html[data-theme="light"] body:not(.emergency) .dur{background:#f1f4fa;border-color:var(--line)}
+html[data-theme="light"] body:not(.emergency) .dur.long{color:#b4232b;background:#fdecee;border-color:#f6c6ca}
+html[data-theme="light"] body:not(.emergency) .note{background:#f5f7fb;color:var(--muted)}
+html[data-theme="light"] body:not(.emergency) .note.warn,html[data-theme="light"] body:not(.emergency) .ro-banner{background:#fff6e5;border-color:#f3d79c;color:#7a5200}
+html[data-theme="light"] body:not(.emergency) .nag{background:#fff6e5!important;border-color:#f3d79c!important}
+html[data-theme="light"] body:not(.emergency) .nag h2{color:#9a6a00!important}
+html[data-theme="light"] body:not(.emergency) .nag p{color:#6b4a00!important}
+html[data-theme="light"] body:not(.emergency) .stat.good b{color:#14915a}
+html[data-theme="light"] body:not(.emergency) .who{color:var(--accent)}
+html[data-theme="light"] body:not(.emergency) .sev{color:#e08a1e}
+html[data-theme="light"] body:not(.emergency) #modal .sheet{background:#fff}
+html[data-theme="light"] body:not(.emergency) #modal{background:rgba(21,32,58,.35)}
+html[data-theme="light"] body:not(.emergency) header{border-bottom:0}
+html[data-theme="light"] body:not(.emergency) .big-start{box-shadow:0 10px 26px rgba(229,72,77,.3)}
+html[data-theme="light"] body:not(.emergency) .tname{background:color-mix(in srgb,var(--tc) 12%,#fff)}
+html[data-theme="light"] body:not(.emergency) .chip{background:#fff}
+html[data-theme="light"] body:not(.emergency) .chip.on{color:#fff}
+html[data-theme="light"] body:not(.emergency) .sevpick button{background:#fff}
+html[data-theme="light"] body:not(.emergency) .bartext{fill:var(--text)!important}
+/* Home: greeting + quick tiles */
+.hello{display:flex;align-items:baseline;justify-content:space-between;margin:2px 2px 10px}
+.hello b{font-size:20px;letter-spacing:-.01em}
+.hello span{color:var(--muted);font-size:13.5px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-md);background:var(--panel);border:1px solid var(--line);text-align:left;font-weight:600;font-size:15px;color:var(--text)}
+.tile .ti{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none;background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c)}
+.tile .ti svg.i{width:21px;height:21px}
+.tile small{display:block;font-weight:500;font-size:12px;color:var(--muted);margin-top:1px}
+html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21,32,58,.05),0 4px 14px rgba(21,32,58,.05)}
+
+/* icon badges: centre every icon exactly */
+.ico>span,.ti>.em,.bs-ic>.em,.logo>.em{display:grid!important;place-items:center;line-height:0;width:100%;height:100%}
+.ico svg.i,.ti svg.i,.bs-ic svg.i,.logo svg.i{display:block;vertical-align:0!important;margin:0}
+
+/* bigger start button + start button on every tab */
+.big-start{min-height:clamp(132px,20vh,176px);padding:22px 22px!important;font-size:clamp(23px,6.4vw,27px)!important;font-weight:800!important;gap:18px!important;border-radius:20px!important}
+.big-start .bs-ic{width:clamp(64px,17vw,80px)!important;height:clamp(64px,17vw,80px)!important;border-radius:18px!important}
+.big-start .bs-ic svg.i{width:60%!important;height:60%!important;stroke-width:2.3}
+.big-start small{font-size:15px!important;margin-top:5px!important}
+#fabStart{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:8px;padding:14px 18px;border-radius:999px;background:var(--red);color:#fff;font-weight:800;font-size:16px;box-shadow:0 8px 24px rgba(229,72,77,.45)}
+#fabStart svg.i{width:22px;height:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo"><span class="em">⏱</span></div>
+      <div style="min-width:0"><h1 id="title">Seizure Tracker</h1>
+      <div class="sub" id="syncState">Loading…</div></div>
+    </div>
+    <button class="ghost" id="addPastBtn" style="white-space:nowrap;flex:none"><span class="em">➕</span> Log past</button>
+  </header>
+
+  <!-- HOME -->
+  <section id="view-home">
+    <div id="roBanner" class="ro-banner hidden"></div>
+    <div class="hello"><b id="helloTxt">Hello</b><span id="helloDate"></span></div>
+    <button class="big-start" id="startBtn"><span class="bs-ic"><span class="em">⏱</span></span><span>Seizure started<small>Tap to start the emergency timer</small></span></button>
+    <div id="backupNag"></div>
+    <div class="card" style="--acc:#7fd8ff">
+      <h2>Overview</h2>
+      <div class="stats">
+        <div class="stat good"><span class="k-ic"><span class="em">✓</span></span><b id="sFree">–</b><span>seizure-free days</span></div>
+        <div class="stat"><span class="k-ic"><span class="em">⬆</span></span><b id="sBest">–</b><span>best streak (days)</span></div>
+        <div class="stat"><span class="k-ic"><span class="em">📅</span></span><b id="s30">0</b><span>last 30 days</span></div>
+      </div>
+      <div class="stats two" style="margin-top:8px">
+        <div class="stat"><span class="k-ic"><span class="em">⏱</span></span><b id="sAvg">–</b><span>avg length (30d)</span></div>
+        <div class="stat"><span class="k-ic"><span class="em">⬆</span></span><b id="sMax">–</b><span>longest (30d)</span></div>
+        <div class="stat"><span class="k-ic"><span class="em">⚡</span></span><b id="sVns">0</b><span>VNS used (30d)</span></div>
+        <div class="stat"><span class="k-ic"><span class="em">💊</span></span><b id="sRescue">0</b><span>rescue meds (30d)</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Manage</h2>
+      <div class="tiles">
+        <button class="tile" data-go="history" style="--c:var(--accent)"><span class="ti"><span class="em">📊</span></span><span>Timeline<small>By day</small></span></button>
+        <button class="tile" data-go="patterns" style="--c:var(--teal)"><span class="ti"><span class="em">⏳</span></span><span>Patterns<small>Charts</small></span></button>
+        <button class="tile" data-go="doctor" style="--c:var(--amber)"><span class="ti"><span class="em">✉️</span></span><span>Doctor report<small>Email or save</small></span></button>
+        <button class="tile" data-go="passport" style="--c:var(--pink)"><span class="ti"><span class="em">📋</span></span><span>Passport<small>One page</small></span></button>
+        <button class="tile" data-go="careplan" style="--c:var(--violet)"><span class="ti"><span class="em">⚡</span></span><span>Care plan<small>Steps & VNS</small></span></button>
+        <button class="tile" data-go="logpast" style="--c:var(--green)"><span class="ti"><span class="em">➕</span></span><span>Log past<small>Earlier one</small></span></button>
+      </div>
+    </div>
+    <div class="card" style="--acc:#b9a7ff">
+      <h2>Recent</h2>
+      <div id="recent"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="view-history" class="hidden">
+    <div class="card" style="--acc:#7ee0d6">
+      <h2>Seizures per week (last 12 weeks)</h2>
+      <div id="chart"></div>
+    </div>
+    <div class="card">
+      <h2>Patterns (last 12 months)</h2>
+      <div class="subhead">Time of day</div>
+      <div id="todChart"></div>
+      <div class="subhead" style="margin-top:14px">By seizure type</div>
+      <div id="typeChart"></div>
+      <div class="subhead" style="margin-top:14px">Seizures per month</div>
+      <div id="monthChart"></div>
+      <div class="subhead" style="margin-top:14px">Possible triggers noted</div>
+      <div id="trigChart"></div>
+    </div>
+    <div class="card" style="--acc:#ffb37a">
+      <h2>Share with the doctor</h2>
+      <label for="sumDays" style="margin-top:0">Period</label>
+      <select id="sumDays"><option value="30">Last 30 days</option><option value="90" selected>Last 3 months</option><option value="182">Last 6 months</option><option value="365">Last 12 months</option><option value="0">Everything</option></select>
+      <div class="row" style="margin-top:12px">
+        <a class="btnlink primary mail" id="mailGmail" data-via="gmail" href="https://mail.google.com/" target="_blank" rel="noopener"><span class="em">✉️</span> Gmail</a>
+        <a class="btnlink primary mail" id="mailOutlook" data-via="outlook" href="https://outlook.live.com/" target="_blank" rel="noopener"><span class="em">✉️</span> Outlook</a>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <a class="btnlink mail" id="mailOther" data-via="other" href="mailto:" target="_blank" rel="noopener" style="background:var(--panel2)"><span class="em">✉️</span> Other email app</a>
+        <button id="shareDoc" class="hidden"><span class="em">📤</span> Share with file…</button>
+      </div>
+      <div id="emailHelp" class="note hidden"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="copySummary">Copy summary</button>
+        <button id="dlCsv">Download spreadsheet</button>
+      </div>
+      <textarea id="summaryOut" class="hidden" readonly style="margin-top:10px;min-height:200px;font-size:13px"></textarea>
+    </div>
+    <div class="card" style="--acc:#b9a7ff">
+      <h2>All seizures</h2>
+      <div class="chips" id="histFilters" style="margin-bottom:6px"></div>
+      <div id="history"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="view-settings" class="hidden">
+    <div class="card" style="--acc:#7fd8ff">
+      <h2>Settings</h2>
+      <label for="setTheme">Appearance (this phone)</label>
+      <select id="setTheme"><option value="auto">Automatic – follows the phone</option><option value="light">Light</option><option value="dark">Dark</option></select>
+      <label for="setName">Child's name (optional)</label>
+      <input id="setName" placeholder="Shown in the app title">
+      <label for="setAge">Child's age or date of birth (for the 999 operator)</label>
+      <input id="setAge" placeholder="e.g. 9, or 14/03/2017">
+      <label for="setAddr">Home address and postcode (for the 999 operator)</label>
+      <textarea id="setAddr" style="min-height:100px" placeholder="One line each, e.g.&#10;1 Example Road&#10;St Neots&#10;PE19 1AB"></textarea>
+      <div style="margin-top:16px;font-weight:700">Medical information for the 999 operator</div>
+      <label for="set_diag">Diagnosis</label>
+      <textarea id="set_diag" class="medf" data-k="diag" style="min-height:52px" placeholder="e.g. Epilepsy (type), other conditions"></textarea>
+      <label for="set_vnsInfo">VNS</label>
+      <textarea id="set_vnsInfo" class="medf" data-k="vnsInfo" style="min-height:52px" placeholder="e.g. VNS fitted 2022 – magnet with her"></textarea>
+      <label for="set_meds">Regular medicines</label>
+      <textarea id="set_meds" class="medf" data-k="meds" style="min-height:52px" placeholder="One per line, with dose if known"></textarea>
+      <label for="set_rescue">Rescue medication prescribed</label>
+      <textarea id="set_rescue" class="medf" data-k="rescue" style="min-height:52px" placeholder="e.g. name and dose from the care plan"></textarea>
+      <label for="set_allergies">Allergies</label>
+      <textarea id="set_allergies" class="medf" data-k="allergies" style="min-height:52px" placeholder="e.g. none known"></textarea>
+      <label for="set_hospital">Hospital / consultant</label>
+      <textarea id="set_hospital" class="medf" data-k="hospital" style="min-height:52px" placeholder="e.g. Addenbrooke's – Dr Smith"></textarea>
+      <label for="setMedInfo">Anything else</label>
+      <textarea id="setMedInfo" style="min-height:52px" placeholder="Other things the ambulance crew should know"></textarea>
+      <label for="setDocEmail">Doctor / epilepsy nurse email (for sharing the log)</label>
+      <input id="setDocEmail" type="email" inputmode="email" placeholder="e.g. epilepsy.nurse@nhs.net">
+      <label for="setAlert">Emergency alarm after (minutes)</label>
+      <input id="setAlert" type="number" min="1" max="60" step="1" value="18">
+      <label for="setPlan">Care plan / emergency instructions (shown on the timer)</label>
+      <textarea id="setPlan" placeholder="Copy in the steps from the seizure care plan, e.g. when to give rescue medication and when to call 999."></textarea>
+      <div style="margin-top:20px;font-weight:700">Care plan steps (timed reminders)</div>
+      <div class="subhead">Each step gives a chime and a prompt on the timer at that time. Use the timings from the care plan.</div>
+      <div id="stepsList"></div>
+      <button id="addStep" class="ghost" style="width:100%;border:1px dashed var(--line2);background:transparent"><span class="em">➕</span> Add a step</button>
+      <div style="margin-top:20px;font-weight:700">VNS swipes</div>
+      <div class="subhead">After the first swipe, a separate VNS timer counts down and sounds an alarm when the next swipe is due.</div>
+      <div class="row"><div><label for="setVnsGap" style="margin-top:0">Time between swipes (seconds)</label><input id="setVnsGap" type="number" min="10" max="600" step="5" inputmode="numeric"></div>
+        <div><label for="setVnsMax" style="margin-top:0">Maximum swipes</label><input id="setVnsMax" type="number" min="1" max="10" inputmode="numeric"></div></div>
+      <div style="margin-top:20px;font-weight:700">Clusters</div>
+      <div class="subhead">Warn when this many seizures happen within the time below. Set 0 to turn off.</div>
+      <div class="row"><div><label for="setClN" style="margin-top:0">Seizures</label><input id="setClN" type="number" min="0" max="20" inputmode="numeric"></div>
+        <div><label for="setClH" style="margin-top:0">Within (hours)</label><input id="setClH" type="number" min="1" max="72" inputmode="numeric"></div></div>
+      <div style="margin-top:20px;font-weight:700">Recovery</div>
+      <label for="setRecChk">Remind me to check breathing every (minutes)</label>
+      <input id="setRecChk" type="number" min="0" max="30" inputmode="numeric">
+      <label for="setContacts">Emergency contacts (for the seizure passport)</label>
+      <textarea id="setContacts" style="min-height:60px" placeholder="One per line, e.g. Mum – 07700 900000"></textarea>
+      <div class="dialog-btns"><button class="primary" id="saveSettings">Save settings</button></div>
+    </div>
+    <div class="card">
+      <h2>Seizure passport</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:0">A one-page summary of the care plan, medical details and what to do – for school, respite or a babysitter. It's built from the settings above.</p>
+      <div class="row"><button id="passView">View</button><button class="primary" id="passDl"><span class="em">⬇</span> Download to print</button></div>
+    </div>
+    <div class="card">
+      <h2>Sharing with carers</h2>
+      <div id="shareInfo" style="color:var(--muted);font-size:14px"></div><div id="demoBox"></div>
+    </div>
+    <div class="note">
+      <b>Install on Android:</b> open this page in Chrome, tap the ⋮ menu, then <b>Add to Home screen</b>. It will open full screen like an app.<br><br>
+      Keep the timer screen open during a seizure – the alarm sounds from the phone while the page is on screen.
+    </div>
+    <div class="card" style="--acc:#ffd27a">
+      <h2>Backup</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:0">Save a copy of every entry, or move the log to another phone.</p>
+      <div class="row"><button id="backupBtn">Download backup</button><button id="restoreBtn">Restore backup</button></div>
+      <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
+      <p id="lastBackup" style="color:var(--muted);font-size:13px;margin:10px 0 0"></p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:0">Videos aren't included in backups – save them to the phone from each seizure's details.</p>
+    </div>
+    <div class="card" style="--acc:#ff9fbf">
+      <h2>Video</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:0">Videos stay on this phone only – they're never uploaded. Test the camera once now so the permission question doesn't pop up during a seizure.</p>
+      <button id="camTest">Test camera</button>
+      <div id="camTestOut" style="font-size:14px;color:var(--muted);margin-top:8px"></div>
+    </div>
+    <div class="note">General first-aid guidance (NHS / Epilepsy Action): call 999 if a seizure lasts more than 5 minutes, if one seizure follows another without recovery in between, if the child is injured, or if it's their first seizure. The child's own care plan takes priority – set the alarm to the time their plan gives.</div>
+  </section>
+</div>
+
+<button id="fabStart" class="hidden" aria-label="Start seizure timer"><span class="em">⏱</span> Start timer</button>
+<nav><div class="in">
+  <button data-v="home" class="on"><span class="em">🏠</span>Home</button>
+  <button data-v="history"><span class="em">📊</span>History</button>
+  <button data-v="settings"><span class="em">⚙️</span>Settings</button>
+</div></nav>
+
+<!-- TIMER -->
+<div id="timer" class="hidden">
+  <div class="top"><span id="tStarted">Started –</span><span id="tAlarmAt">Alarm at 18:00</span></div>
+  <div id="clusterBox" class="hidden"></div>
+  <div id="mid">
+    <div id="clock">0:00</div>
+    <div id="clockSub"></div>
+    <div id="nextStep" class="hidden"></div>
+    <div id="soundHint" class="hidden">Tap the screen once to turn on alarm sounds</div>
+  </div>
+  <div id="vnsBox" class="hidden"></div>
+  <div id="stepBox" class="hidden"></div>
+  <div id="alertBox" class="hidden"><span class="em">⚠️</span> <span id="alertText">5 minutes passed</span>
+    <div class="plan" id="alertPlan"></div>
+    <a class="call" href="tel:999"><span class="em">📞</span> Call 999</a>
+    <button class="opLink" id="opBtn2"><span class="em">📋</span> What to tell the operator</button>
+    <div style="font-size:12px;font-weight:400;margin-top:6px;opacity:.8">If the button doesn't dial, phone 999 directly.</div>
+    <button id="muteBtn"></button>
+  </div>
+  <div id="planBox" class="hidden"></div>
+  <div id="camWrap" class="hidden"><video id="camVid" muted playsinline autoplay></video><span id="recDot">● REC 0:00</span><button id="camFlip">⟲ Flip camera</button></div>
+  <input type="file" id="vidCapture" accept="video/*" capture="environment" class="hidden">
+  <div class="events" id="tEvents"></div>
+  <div class="actions">
+    <button id="recBtn"><span class="ico"><span>🎥</span></span>Record video</button>
+    <button id="opBtn"><span class="ico"><span>📋</span></span>Info for 999</button>
+    <button id="vnsBtn"><span class="ico"><span>⚡</span></span>VNS swiped</button>
+    <button id="medBtn"><span class="ico"><span>💊</span></span>Rescue med given</button>
+    <button id="markBtn"><span class="ico"><span>📝</span></span>Mark moment</button>
+    <button id="stopBtn"><span class="em">✓</span> SEIZURE ENDED</button>
+  </div>
+  <div class="subrow"><button id="recovBtn"><span class="em">🛌</span> Recovery position</button><button id="cancelBtn">Started by mistake</button>
+  </div>
+</div>
+
+<div id="recov" class="hidden">
+  <div class="top"><span id="rEnded">Seizure ended –</span><span id="rLasted"></span></div>
+  <div class="lbl">Recovery time</div>
+  <div id="rClock">0:00</div>
+  <div id="rSub">Stay with them until they're back to their normal self.</div>
+  <div id="rCheck"></div>
+  <div id="rLog"></div>
+  <div class="acts">
+    <button id="rDone"><span class="em">✓</span> Back to normal</button>
+    <div class="row"><button id="rPos"><span class="em">🛌</span> Recovery position</button><button id="rSkip">Add details now</button></div>
+  </div>
+</div>
+<div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+
+<script>
+(() => {
+"use strict";
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const ICONS={"⏱": "<circle cx=\"12\" cy=\"13\" r=\"8\"/><path d=\"M12 9v4l2.5 2.5M9 2h6M12 2v3\"/>", "🎥": "<rect x=\"2\" y=\"6\" width=\"14\" height=\"12\" rx=\"2\"/><path d=\"m16 10.5 6-3.5v10l-6-3.5\"/>", "📋": "<rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\"/><path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 12h6M9 16h4\"/>", "⚡": "<path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/>", "💊": "<path d=\"m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z\"/><path d=\"m8.5 8.5 7 7\"/>", "📝": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z\"/>", "🔕": "<path d=\"M8.7 3A6 6 0 0 1 18 8a21 21 0 0 0 .6 5M17 17H3s3-2 3-9a5 5 0 0 1 .3-1.7M10.3 21a1.94 1.94 0 0 0 3.4 0M2 2l20 20\"/>", "🔔": "<path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0\"/>", "🛌": "<path d=\"M2 4v16M2 8h16a4 4 0 0 1 4 4v8M2 17h20\"/><circle cx=\"7\" cy=\"12.5\" r=\"2\"/>", "📞": "<path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z\"/>", "✉️": "<rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\"/><path d=\"m22 7-10 6L2 7\"/>", "📤": "<path d=\"M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13\"/>", "▶": "<path d=\"m7 4 13 8-13 8z\"/>", "⬇": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3\"/>", "✓": "<path d=\"M20 6 9 17l-5-5\"/>", "⚠️": "<path d=\"m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z\"/><path d=\"M12 9v4M12 17h.01\"/>", "⏹": "<rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" rx=\"2\"/>", "➕": "<path d=\"M12 5v14M5 12h14\"/>", "🏠": "<path d=\"m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z\"/>", "📊": "<path d=\"M3 3v18h18M7 16v-5M12 16V8M17 16v-8\"/>", "⚙️": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z\"/>", "📅": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M16 2v4M8 2v4M3 10h18\"/>", "⏳": "<path d=\"M5 22h14M5 2h14M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4a2 2 0 0 0 .6-1.4V2\"/>", "⬆": "<path d=\"m18 15-6-6-6 6\"/>"};
+function I(ch){ const k=ch.replace(/\uFE0F/g,""); const d=ICONS[ch]||ICONS[k]||ICONS[k+"\uFE0F"]; return d?`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`:ch; }
+function iconize(root){ (root||document).querySelectorAll(".em,.ico>span").forEach(el=>{ if(el.querySelector("svg")) return; const t=el.textContent.trim(); const h=I(t); if(h!==t) el.innerHTML=h; }); }
+const EMO_RE=/(?:[\u2600-\u27BF\u2B50\u23E9-\u23FA]|[\u{1F300}-\u{1FAFF}])\uFE0F?/gu;
+function em(h){ return String(h).replace(EMO_RE,m=>`<span class="em">${I(m)}</span>`); }
+function ico0(i,t){ return `<span class="em">${I(i)}</span> ${t}`; }
+function ico(i,t){ return `<span class="ico">${I(i)}</span>${t}`; }
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const fmtDur = sec => { sec = Math.max(0, Math.round(sec||0)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`; };
+const fmtDate = ms => new Date(ms).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+const fmtTime = ms => new Date(ms).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+const toLocalInput = ms => { const d=new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const ago = ms => { const d=(Date.now()-ms)/1000; if(d<3600) return Math.max(1,Math.round(d/60))+"m"; if(d<86400) return Math.round(d/3600)+"h"; return Math.round(d/86400)+"d"; };
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),2200); }
+const ls = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch{ return d; } },
+             set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} },
+             del(k){ try{ localStorage.removeItem(k); }catch{} } };
+
+const TYPES = ["Tonic-clonic","Focal (aware)","Focal (impaired awareness)","Absence","Myoclonic","Atonic (drop)","Tonic","Unsure / other"];
+const TRIGGERS = ["Tired / poor sleep","Missed medication","Unwell / fever","Stress / excitement","Too hot","Flashing lights","Skipped meal","Hormonal","None obvious"];
+const MARKS = ["Stiffening","Jerking started","Jerking stopped","Staring / unresponsive","Eyes rolled","Fell","Lips blue","Breathing changed","Vomited","Incontinence","Bit tongue","Injured","Recovery position","999 called","Ambulance arrived"];
+// moments marked during the seizure that fill in "What you saw" automatically
+const ACTIONS = ["Recovery position","999 called","Ambulance arrived"];
+const MARK_TO_ACTION = {"Recovery position":"Recovery position","Rolled into recovery position":"Recovery position","999 called":"999 called","Called 999":"999 called","Ambulance arrived":"Ambulance arrived"};
+const MARK_TO_SIGN = {"Breathing changed":"Breathing changed","Stiffening":"Stiffening","Jerking started":"Jerking","Jerking stopped":"Jerking","Staring / unresponsive":"Staring / unresponsive","Eyes rolled":"Eyes rolled","Fell":"Fell","Lips blue":"Lips blue","Vomited":"Vomited","Incontinence":"Incontinence","Bit tongue":"Bit tongue","Injured":"Injured"};
+const SYSTEM_EVENT = /^(VNS|Rescue medication|Video record|Done: |Not needed: |Recovery check|Back to normal)/;
+function autoFromEvents(events){
+  const signs=[], actions=[], notes=[];
+  (events||[]).forEach(ev=>{ const sg=MARK_TO_SIGN[ev.label], ac=MARK_TO_ACTION[ev.label];
+    if(sg){ if(!signs.includes(sg)) signs.push(sg); }
+    else if(ac){ if(!actions.includes(ac)) actions.push(ac); }
+    else if(!MARKS.includes(ev.label) && !SYSTEM_EVENT.test(ev.label)) notes.push(`${fmtDur(ev.at)} – ${ev.label}`); });
+  return {signs, actions, notes:notes.join("\n")};
+}
+const SIGNS = ["Stiffening","Jerking","Staring / unresponsive","Eyes rolled","Fell","Lips blue","Breathing changed","Vomited","Incontinence","Bit tongue","Injured","Confused after","Slept after"];
+
+// ---------- state ----------
+let seizures = [];          // {id,start,durationSec,type,triggers[],signs[],rescueMed,rescueAtSec,recoveryMin,notes,events[]}
+const DEFAULTS = { name:"", alertMin:18, plan:"", age:"", addr:"", docEmail:"", medInfo:"", diag:"", vnsInfo:"", meds:"", rescue:"", allergies:"", hospital:"", steps:[], clusterN:0, clusterH:24, vnsGapSec:60, vnsMax:3, recCheckMin:5, contacts:"" };
+const MED_FIELDS=[["diag","Diagnosis"],["vnsInfo","VNS"],["meds","Regular medicines"],["rescue","Rescue medication prescribed"],["allergies","Allergies"],["hospital","Hospital / consultant"],["medInfo","Other"]];
+let settings = {...DEFAULTS};
+const PRESETS=[5,10,15,18,20,25,30];
+let userNs=null, canWrite=true, db=null, me=null, colRef=null, settingsRef=null, activeRef=null, mode="local";
+let active = null;          // {start, events:[], rescueAtSec, muted, alarmed}
+
+// ---------- storage ----------
+const LOCAL_KEY="st_seizures_v1", LOCAL_SET="st_settings_v1", LOCAL_ACTIVE="st_active_v1";
+function migrate(){ // one-off: older saved settings used a 5-minute default
+  let changed=false;
+  if(!settings.cfgV){ if(!settings.alertMin||settings.alertMin===5) settings.alertMin=18; settings.cfgV=2; changed=true; }
+  if(settings.cfgV===2){ settings.cfgV=3; changed=true; }
+  return changed; }
+function loadLocal(){ seizures = ls.get(LOCAL_KEY, []); const saved=ls.get(LOCAL_SET, null); settings = Object.assign({...DEFAULTS}, saved||{}); if(!saved) settings.cfgV=3; if(migrate()) ls.set(LOCAL_SET,settings); }
+function cleanRec(r){ const o={}; for(const k of ["id","by","byName","demo","clusterNo","actions","severity","start","durationSec","type","triggers","signs","rescueMed","rescueAtSec","videos","vns","vnsCount","vnsAtSec","recoveryMin","notes","events"]) if(r[k]!==undefined) o[k]=r[k]; return o; }
+
+async function saveSeizure(rec){
+  rec = cleanRec(rec);
+  const i = seizures.findIndex(s=>s.id===rec.id);
+  if(i>=0) seizures[i]=rec; else seizures.push(rec);
+  ls.set(LOCAL_KEY, seizures);
+  render();
+  if(colRef){ try{ await colRef.doc(rec.id).set(rec); } catch(e){ handleDbErr(e,"save"); } }
+}
+async function deleteSeizure(id){
+  const old=seizures.find(s=>s.id===id); (old&&old.videos||[]).forEach(v=>VDB.del(v.key).catch(()=>{}));
+  seizures = seizures.filter(s=>s.id!==id); ls.set(LOCAL_KEY, seizures); render();
+  if(colRef){ try{ await colRef.doc(id).delete(); } catch(e){ handleDbErr(e,"delete"); } }
+}
+async function saveSettings(){
+  ls.set(LOCAL_SET, settings); render();
+  if(settingsRef){ try{ await settingsRef.set({...settings}); } catch(e){ handleDbErr(e,"settings"); } }
+}
+function handleDbErr(e, what){
+  console.warn("db",what,e);
+  if(e && e.code==="invalid_argument"){ canWrite=false; const b=$("#roBanner"); b.textContent="You can view this log but not add to it. Ask the person who shared it to make you an Editor."; b.classList.remove("hidden"); toast("View-only – not saved to the shared log"); return; }
+  if(e && e.code==="quota_exceeded") toast("Storage full – export your data, then delete old entries");
+  else toast("Saved on this phone; couldn't sync to your account just now");
+}
+
+async function initDb(){
+  try{
+    if(!window.claude || !window.claude.use) throw 0;
+    const [d,u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if(!d || !u) throw 0;
+    const id = await u.id();
+    if(!id) throw 0;
+    db=d; me=id; userNs=u;
+    const base = "data/users/"+me;
+    // shared log + settings (everyone the page is shared with as Editor); timer-in-progress stays per person
+    settingsRef = db.doc("config/settings");
+    activeRef   = db.doc(base+"/active");
+    colRef      = db.collection("seizures");
+    const privCol = db.doc(base+"/log").collection("seizures"), privSet = db.doc(base+"/settings");
+    try{ const cw=u.can && u.can("data.write"); canWrite = cw!==false; }catch{}
+    if(!canWrite){ const b=$("#roBanner"); b.textContent="You can view this log but not add to it. Ask the person who shared it to make you an Editor."; b.classList.remove("hidden"); }
+    mode="cloud";
+    $("#syncState").textContent="Connecting…";
+    let loaded=false;
+    const timer=setTimeout(()=>{ if(!loaded) $("#syncState").textContent="Can't reach your account yet – showing data saved on this phone"; },10000);
+    colRef.onSnapshot(snap=>{
+      const remote = snap.docs.map(d=>({...d.data(), id:d.id}));
+      // merge: anything only stored locally (e.g. logged offline / before sign-in) gets uploaded
+      if(loaded){
+        seizures = remote;                       // account is the source of truth once confirmed
+      } else {
+        const ids=new Set(remote.map(r=>r.id));
+        const localOnly = seizures.filter(s=>!ids.has(s.id));
+        if(!snap.metadata.fromCache) localOnly.forEach(r=>colRef.doc(r.id).set(cleanRec(r)).catch(()=>{}));
+        seizures = remote.concat(localOnly);
+      }
+      if(!snap.metadata.fromCache && !loaded && canWrite){
+        // one-off: bring across anything saved in this person's private log
+        privCol.get().then(ps=>{ const have=new Set(seizures.map(x=>x.id)); ps.docs.forEach(d=>{ if(!have.has(d.id)) colRef.doc(d.id).set(cleanRec({...d.data(),id:d.id})).catch(()=>{}); }); }).catch(()=>{});
+      }
+      if(!snap.metadata.fromCache){ loaded=true; clearTimeout(timer); $("#syncState").textContent="Shared log · synced"; $("#syncState").classList.add("ok"); renderShareInfo(); }
+      ls.set(LOCAL_KEY, seizures);
+      render(); renderShareInfo();
+    }, err=>{ clearTimeout(timer); $("#syncState").textContent="Sync paused – saving on this phone"; console.warn(err); });
+    settingsRef.get().then(s=>{
+      if(s.exists){ settings=Object.assign({...DEFAULTS},s.data()); if(migrate()) settingsRef.set({...settings}).catch(()=>{}); ls.set(LOCAL_SET,settings); render(); fillSettings(); if(active) openTimer(); }
+      else { privSet.get().then(ps=>{ if(ps.exists){ settings=Object.assign({...DEFAULTS},ps.data()); migrate(); ls.set(LOCAL_SET,settings); fillSettings(); render(); } if(canWrite) settingsRef.set({...settings}).catch(()=>{}); }).catch(()=>{}); }
+    }).catch(()=>{});
+    if(!active){
+      activeRef.get().then(s=>{ if(!active && s.exists && s.data().start){ active={...s.data(), events:s.data().events||[]}; ls.set(LOCAL_ACTIVE,active); openTimer(); } }).catch(()=>{});
+    }
+  }catch(e){
+    mode="local";
+    $("#syncState").textContent="Saving on this phone only – sign in to Claude to back up";
+  }
+}
+
+const nameCache={};
+function fillWho(){
+  const els=[...document.querySelectorAll(".who[data-by]")]; if(!els.length || !userNs || !userNs.profiles) return;
+  const ids=[...new Set(els.map(e=>e.dataset.by))];
+  const put=()=>els.forEach(e=>{ const id=e.dataset.by; e.textContent = id===me ? "· You" : `· ${(nameCache[id]||"Someone").split(" ")[0]}`; });
+  put();
+  userNs.profiles(ids).then(ps=>{ ids.forEach(id=>{ if(ps&&ps[id]&&ps[id].name) nameCache[id]=ps[id].name; }); put(); }).catch(()=>{});
+}
+function renderShareInfo(){
+  const el=$("#shareInfo"); if(!el) return;
+  setTimeout(()=>{ const n=seizures.filter(x=>x.demo).length, box=$("#demoBox");
+    if(box) box.innerHTML = n ? `<div class="note" style="margin-top:12px">There ${n==1?"is 1 demo entry":`are ${n} demo entries`} in the log, made to show how sharing looks.<div style="margin-top:8px"><button class="danger" id="rmDemo">Remove demo entries</button></div></div>` : "";
+    const b=$("#rmDemo"); if(b) b.onclick=()=>confirmSheet("Remove demo entries?",`Deletes the ${n} made-up entries from Sam and School Nurse. Real entries are not touched.`,"Remove",async()=>{ for(const x of seizures.filter(y=>y.demo)) await deleteSeizure(x.id); toast("Demo entries removed"); renderShareInfo(); });
+  },0);
+  el.innerHTML = mode==="cloud"
+    ? `This is a <b style="color:var(--text)">shared log</b>. Everyone you share this page with as an <b style="color:var(--text)">Editor</b> sees the same seizures and settings, and can add their own entries – each one shows who logged it.<br><br>To add a carer: open this page on claude.ai, tap <b style="color:var(--text)">Share</b>, and invite them by email as an Editor. They need a Claude account. A timer in progress stays on the phone that started it.`
+    : `Sharing works when the app is opened from its Claude link while signed in. In the installed app the log is kept on this phone only.`;
+}
+
+// ---------- rendering ----------
+function sorted(){ return [...seizures].sort((a,b)=>b.start-a.start); }
+function within(days){ const t=Date.now()-days*86400000; return seizures.filter(s=>s.start>=t); }
+function itemHTML(s,inDay){
+  const alarmSec=(settings.alertMin||18)*60;
+  const pills=[(s.vns?`<span class="pill vns">${I("⚡")}VNS${s.vnsCount>1?" ×"+s.vnsCount:""}</span>`:""),(s.rescueMed?`<span class="pill med">${I("💊")}Rescue med</span>`:""),((s.videos||[]).length?`<span class="pill vid">${I("🎥")}Video</span>`:"")].join("");
+  const bits=[(s.triggers||[]).filter(t=>t!=="None obvious").join(", ")].filter(Boolean).join(" · ");
+  const sev = s.severity ? `<span class="sev" title="Severity ${s.severity} of 5">${"●".repeat(s.severity)}<span class="off">${"●".repeat(5-s.severity)}</span></span>` : "";
+  const vk=(s.videos||[]).length?s.videos[0].key:"";
+  return `<div class="list-item" data-id="${esc(s.id)}" style="--tc:${typeCol(s.type)}">
+    ${vk?`<div class="thumb" data-vk="${esc(vk)}"></div>`:`<i class="tbar"></i>`}
+    <div style="flex:1;min-width:0"><div class="t">${inDay?esc(fmtTime(s.start)):esc(fmtDate(s.start))+" · "+esc(fmtTime(s.start))}${s.type?` <span class="tname">${esc(s.type)}</span>`:""} ${sev}</div><div class="m">${pills}<span>${esc(bits||(pills?"":"Tap to add details"))}</span>${s.byName?`<span class="who">· ${esc(s.byName.split(" ")[0])}</span>`:(mode==="cloud"&&s.by)?`<span class="who" data-by="${esc(s.by)}"></span>`:""}${s.demo?`<span class="pill" style="font-size:11px">Demo</span>`:""}</div></div>
+    <div class="dur ${s.durationSec>=alarmSec?"long":""}">${fmtDur(s.durationSec)}</div></div>`;
+}
+const DAY=86400e3;
+function dayStart(ms){ const d=new Date(ms); d.setHours(0,0,0,0); return d.getTime(); }
+function daysBetween(a,b){ return Math.round((dayStart(b)-dayStart(a))/DAY); }
+// seizure-free days = whole days since the day of the last seizure; best = longest such gap in the last 12 months
+function streaks(){
+  if(!seizures.length) return {current:null,best:null};
+  const days=[...new Set(seizures.map(x=>dayStart(x.start)))].sort((a,b)=>a-b);
+  const cur=Math.max(0,daysBetween(days[days.length-1],Date.now()));
+  const from=Date.now()-365*DAY; let best=cur;
+  for(let i=1;i<days.length;i++){ if(days[i]<from) continue; best=Math.max(best, daysBetween(days[i-1],days[i])-1); }
+  return {current:cur,best};
+}
+const TYPE_COL={"Tonic-clonic":"#ff6b6b","Focal (aware)":"#2bb3a3","Focal (impaired awareness)":"#8b7bff","Absence":"#4c8dff","Myoclonic":"#f0a429","Atonic (drop)":"#e5679b","Tonic":"#ff9f5a","Unsure / other":"#8e9ab3"};
+const typeCol=t=>TYPE_COL[t]||"#5f6b85";
+let histFilter="All";
+function dayLabel(ms){ const d=daysBetween(ms,Date.now()); return d===0?"Today":d===1?"Yesterday":new Date(ms).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year: new Date(ms).getFullYear()===new Date().getFullYear()?undefined:"numeric"}); }
+function timelineHTML(list){
+  let out="", lastDay=null;
+  list.forEach(x=>{ const d=dayStart(x.start); if(d!==lastDay){ out+=`<div class="dayhdr">${esc(dayLabel(x.start))}</div>`; lastDay=d; } out+=itemHTML(x,true); });
+  return out;
+}
+function renderHistory(all){
+  const types=["All",...TYPES.filter(t=>all.some(x=>x.type===t)), ...(all.some(x=>!x.type)?["Not set"]:[])];
+  if(!types.includes(histFilter)) histFilter="All";
+  $("#histFilters").innerHTML = types.length>2 ? types.map(t=>`<button class="chip fchip ${t===histFilter?"on":""}" data-f="${esc(t)}">${t!=="All"&&t!=="Not set"?`<i class="tdot" style="background:${typeCol(t)}"></i>`:""}${esc(t)}</button>`).join("") : "";
+  document.querySelectorAll("#histFilters .fchip").forEach(b=>b.onclick=()=>{ histFilter=b.dataset.f; renderHistory(sorted()); fillWho(); fillThumbs(); });
+  const list = histFilter==="All" ? all : all.filter(x=> histFilter==="Not set" ? !x.type : x.type===histFilter);
+  $("#history").innerHTML = list.length ? timelineHTML(list) : `<div class="empty">Nothing here yet.</div>`;
+}
+// ---------- appearance ----------
+const LOCAL_THEME="st_theme_v1";
+function applyTheme(){
+  const pref=ls.get(LOCAL_THEME,"auto");
+  let dark = pref==="dark" || (pref==="auto" && (()=>{ try{ return matchMedia("(prefers-color-scheme: dark)").matches; }catch{ return true; } })());
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.content = dark ? "#0b1220" : "#f2f5fb";
+  const sel=$("#setTheme"); if(sel) sel.value=pref;
+}
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme); }catch{}
+function setEmergency(){ document.body.classList.toggle("emergency", !$("#timer").classList.contains("hidden") || !$("#recov").classList.contains("hidden")); }
+function renderHello(){
+  const h=new Date().getHours(), g = h<5?"Hello":h<12?"Good morning":h<18?"Good afternoon":"Good evening";
+  $("#helloTxt").textContent = g + (settings.name?"":"");
+  $("#helloDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+}
+function goView(v){ document.querySelector(`nav button[data-v="${v}"]`).click(); }
+document.querySelectorAll(".tile[data-go]").forEach(t=>t.onclick=()=>{
+  const g=t.dataset.go;
+  if(g==="history"){ goView("history"); setTimeout(()=>$("#history").closest(".card").scrollIntoView({behavior:"smooth"}),50); }
+  else if(g==="patterns"){ goView("history"); setTimeout(()=>$("#todChart").closest(".card").scrollIntoView({behavior:"smooth"}),50); }
+  else if(g==="doctor"){ goView("history"); setTimeout(()=>$("#sumDays").closest(".card").scrollIntoView({behavior:"smooth"}),50); }
+  else if(g==="passport"){ $("#passView").click(); }
+  else if(g==="careplan"){ goView("settings"); setTimeout(()=>$("#stepsList").scrollIntoView({behavior:"smooth",block:"center"}),50); }
+  else if(g==="logpast"){ $("#addPastBtn").click(); }
+});
+function render(){
+  $("#title").textContent = settings.name ? `${settings.name}'s seizures` : "Seizure Tracker";
+  const w7=within(7), w30=within(30), all=sorted();
+  $("#s30").textContent=w30.length;
+  const st=streaks(); $("#sFree").textContent = st.current==null ? "–" : st.current; $("#sBest").textContent = st.best==null ? "–" : st.best;
+  const durs=w30.map(s=>s.durationSec||0).filter(Boolean);
+  $("#sAvg").textContent = durs.length ? fmtDur(durs.reduce((a,b)=>a+b,0)/durs.length) : "–";
+  $("#sMax").textContent = durs.length ? fmtDur(Math.max(...durs)) : "–";
+  $("#sRescue").textContent = w30.filter(s=>s.rescueMed).length;
+  $("#sVns").textContent = w30.filter(s=>s.vns).length;
+
+  $("#recent").innerHTML = all.length ? timelineHTML(all.slice(0,5)) : `<div class="empty">No seizures logged yet.</div>`;
+  renderHistory(all);
+  renderChart(); renderPatterns(); renderBackupNag(); fillWho(); fillThumbs(); renderHello();
+  try{ refreshMailLinks(); }catch{}
+}
+function barsSVG(labels, vals, h=120){
+  const W=520, pl=8, pb=18, n=vals.length, bw=(W-pl)/n, max=Math.max(1,...vals); let g="";
+  vals.forEach((v,i)=>{ const bh=(h-pb-14)*v/max, x=pl+i*bw+3, y=h-pb-bh;
+    g+=`<rect x="${x}" y="${y}" width="${bw-6}" height="${Math.max(bh,v?2:0)}" rx="4" fill="url(#barg)"/>`;
+    if(v) g+=`<text x="${x+(bw-6)/2}" y="${y-3}" text-anchor="middle" class="bartext" style="fill:#e8edf7;font-size:10px">${v}</text>`;
+    g+=`<text x="${x+(bw-6)/2}" y="${h-4}" text-anchor="middle" style="font-size:9.5px">${labels[i]}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${h}" width="100%"><defs><linearGradient id="barg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6ea4ff"/><stop offset="1" stop-color="#3b74e0"/></linearGradient></defs>${g}</svg>`;
+}
+function renderPatterns(){
+  const yr=within(365);
+  if(!yr.length){ ["#todChart","#monthChart","#trigChart","#typeChart"].forEach(id=>$(id).innerHTML=`<div class="empty" style="padding:6px 0">Not enough data yet.</div>`); return; }
+  const tod=[0,0,0,0,0,0,0,0]; yr.forEach(x=>tod[Math.floor(new Date(x.start).getHours()/3)]++);
+  $("#todChart").innerHTML=barsSVG(["0–3","3–6","6–9","9–12","12–15","15–18","18–21","21–24"],tod);
+  const now=new Date(), ms=[], lab=[];
+  for(let i=11;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1), e=new Date(now.getFullYear(),now.getMonth()-i+1,1);
+    ms.push(seizures.filter(x=>x.start>=d.getTime()&&x.start<e.getTime()).length); lab.push(d.toLocaleDateString("en-GB",{month:"short"})); }
+  $("#monthChart").innerHTML=barsSVG(lab,ms);
+  const ty={}; yr.forEach(x=>{ const k=x.type||"Not set"; ty[k]=(ty[k]||0)+1; });
+  const tys=Object.entries(ty).sort((a,b)=>b[1]-a[1]), tmx=tys[0][1], ttot=yr.length;
+  $("#typeChart").innerHTML = tys.map(([t,n])=>`<div class="hbar"><span><i class="tdot" style="background:${typeCol(t)}"></i>${esc(t)}</span><div class="b" style="width:${Math.max(6,100*n/tmx)}%;background:${typeCol(t)}"></div><span class="n">${n} · ${Math.round(100*n/ttot)}%</span></div>`).join("");
+  const tc={}; yr.forEach(x=>(x.triggers||[]).forEach(t=>{ if(t!=="None obvious") tc[t]=(tc[t]||0)+1; }));
+  const top=Object.entries(tc).sort((a,b)=>b[1]-a[1]).slice(0,8), mx=top.length?top[0][1]:1;
+  $("#trigChart").innerHTML = top.length ? top.map(([t,n])=>`<div class="hbar"><span>${esc(t)}</span><div class="b" style="width:${Math.max(6,100*n/mx)}%"></div><span class="n">${n}</span></div>`).join("") : `<div class="empty" style="padding:6px 0">No triggers recorded yet.</div>`;
+}
+// ---------- backup reminder (phone-only mode) ----------
+const LOCAL_BK="st_lastbackup_v1", LOCAL_BKS="st_backupsnooze_v1";
+function renderBackupNag(){
+  const el=$("#backupNag"); if(!el) return;
+  const last=ls.get(LOCAL_BK,0), snooze=ls.get(LOCAL_BKS,0), due=Date.now()-last>30*86400e3;
+  const lb=$("#lastBackup"); if(lb) lb.textContent = last ? `Last backup: ${fmtDate(last)}` : (mode==="cloud" ? "Your log is also saved to your Claude account." : "No backup downloaded yet.");
+  if(mode!=="local" || !seizures.length || !due || Date.now()<snooze){ el.innerHTML=""; return; }
+  el.innerHTML=`<div class="card nag"><h2>Backup reminder</h2><p style="margin:0 0 12px;font-size:14px;color:#e9d3a8">${last?`It's been over a month since the last backup.`:`The log is only stored on this phone.`} Download a copy so it isn't lost if the phone is.</p>
+    <div class="row"><button class="primary" id="nagBk">${I("⬇")} Download backup</button><button id="nagLater">Remind me next week</button></div></div>`;
+  $("#nagBk").onclick=()=>$("#backupBtn").click();
+  $("#nagLater").onclick=()=>{ ls.set(LOCAL_BKS,Date.now()+7*86400e3); renderBackupNag(); };
+}
+function renderChart(){
+  const weeks=12, now=new Date(); now.setHours(0,0,0,0);
+  const day=(now.getDay()+6)%7; const monday=new Date(now); monday.setDate(now.getDate()-day);
+  const starts=[]; for(let i=weeks-1;i>=0;i--){ const d=new Date(monday); d.setDate(monday.getDate()-7*i); starts.push(d.getTime()); }
+  const counts=starts.map((st,i)=>seizures.filter(s=>s.start>=st && s.start<(starts[i+1]||st+7*86400000)).length);
+  const max=Math.max(1,...counts), W=520,H=150,pl=22,pb=20,bw=(W-pl)/weeks;
+  let g="";
+  for(let i=0;i<weeks;i++){
+    const h=(H-pb-10)*counts[i]/max, x=pl+i*bw+4, y=H-pb-h;
+    g+=`<rect x="${x}" y="${y}" width="${bw-8}" height="${Math.max(h,counts[i]?2:0)}" rx="4" fill="url(#barg)"/>`;
+    if(counts[i]) g+=`<text x="${x+(bw-8)/2}" y="${y-3}" text-anchor="middle" style="fill:#f2f3f7">${counts[i]}</text>`;
+    if(i%2===weeks%2||i===weeks-1){ const d=new Date(starts[i]); g+=`<text x="${x+(bw-8)/2}" y="${H-5}" text-anchor="middle">${d.getDate()}/${d.getMonth()+1}</text>`; }
+  }
+  g+=`<line x1="${pl}" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="#323746"/>`;
+  $("#chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Seizures per week"><defs><linearGradient id="barg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6ea4ff"/><stop offset="1" stop-color="#3b74e0"/></linearGradient></defs>${g}</svg><div style="font-size:12px;color:var(--muted)">Weeks starting Monday</div>`;
+}
+function renderStepRows(list){
+  $("#stepsList").innerHTML = (list||[]).map((st,i)=>`<div class="steprow"><input type="number" min="0" max="120" step="0.5" inputmode="decimal" class="stMin" value="${st.min}" aria-label="Minutes"><input class="stTxt" value="${esc(st.text)}" placeholder="e.g. Give rescue medication"><button class="stDel" data-i="${i}" aria-label="Remove">✕</button></div>`).join("")
+    || `<div class="subhead" style="margin:0 0 8px">No steps yet.</div>`;
+  document.querySelectorAll(".stDel").forEach(b=>b.onclick=()=>{ const l=readStepRows(); l.splice(+b.dataset.i,1); renderStepRows(l); });
+}
+function readStepRows(){ return [...document.querySelectorAll(".steprow")].map(r=>({min:Math.max(0,parseFloat(r.querySelector(".stMin").value)||0), text:r.querySelector(".stTxt").value.trim()})); }
+function fillSettings(){ renderStepRows(settings.steps||[]); $("#setVnsGap").value=settings.vnsGapSec||60; $("#setVnsMax").value=settings.vnsMax||3; $("#setClN").value=settings.clusterN||0; $("#setClH").value=settings.clusterH||24; $("#setRecChk").value=settings.recCheckMin??5; $("#setContacts").value=settings.contacts||""; $("#setName").value=settings.name||""; $("#setAlert").value=settings.alertMin||18; $("#setPlan").value=settings.plan||""; $("#setAge").value=settings.age||""; $("#setAddr").value=settings.addr||""; $("#setMedInfo").value=settings.medInfo||""; $("#setDocEmail").value=settings.docEmail||""; document.querySelectorAll(".medf").forEach(t=>t.value=settings[t.dataset.k]||""); }
+
+// ---------- nav ----------
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
+  ["home","history","settings"].forEach(v=>$("#view-"+v).classList.toggle("hidden",v!==b.dataset.v));
+  $("#fabStart").classList.toggle("hidden", b.dataset.v==="home");
+  window.scrollTo(0,0);
+});
+document.addEventListener("click",e=>{ const it=e.target.closest(".list-item"); if(it){ const s=seizures.find(x=>x.id===it.dataset.id); if(s) openForm(s,false); } });
+
+// ---------- alarm sound ----------
+let actx=null, beepTimer=null, wakeLock=null;
+function unlockAudio(){ try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==="suspended") actx.resume(); }catch{} }
+function beep(){
+  if(!actx) return;
+  try{
+    const t=actx.currentTime;
+    [0,0.25,0.5].forEach(off=>{ const o=actx.createOscillator(), g=actx.createGain();
+      o.type="square"; o.frequency.value=880; g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(0.4,t+off+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.2);
+      o.connect(g).connect(actx.destination); o.start(t+off); o.stop(t+off+0.22); });
+  }catch{}
+  try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]); }catch{}
+}
+function chime(){
+  try{ if(actx){ const t=actx.currentTime; [[660,0],[880,0.18],[1100,0.36]].forEach(([f,off])=>{ const o=actx.createOscillator(), g=actx.createGain();
+    o.type="sine"; o.frequency.value=f; g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(0.5,t+off+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.35);
+    o.connect(g).connect(actx.destination); o.start(t+off); o.stop(t+off+0.4); }); } }catch{}
+  try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch{}
+}
+function startAlarm(){ if(beepTimer||active?.muted) return; beep(); beepTimer=setInterval(()=>{ if(active && !active.muted) beep(); },2500); }
+function stopAlarm(){ clearInterval(beepTimer); beepTimer=null; try{ navigator.vibrate && navigator.vibrate(0); }catch{} }
+async function keepAwake(on){
+  try{
+    if(on && "wakeLock" in navigator){ wakeLock = await navigator.wakeLock.request("screen"); }
+    else if(!on && wakeLock){ await wakeLock.release(); wakeLock=null; }
+  }catch{}
+}
+
+// ---------- video store (stays on this phone) ----------
+const VDB = {
+  p:null,
+  open(){ return this.p || (this.p = new Promise((res,rej)=>{ try{ const r=indexedDB.open("seizure-videos",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("videos",{keyPath:"key"}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } })); },
+  async run(mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("videos",mode); const q=fn(t.objectStore("videos")); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); }); },
+  put(v){ return this.run("readwrite",s=>s.put(v)); },
+  get(k){ return this.run("readonly",s=>s.get(k)); },
+  del(k){ return this.run("readwrite",s=>s.delete(k)); }
+};
+const vidExt = t => /mp4/.test(t||"") ? "mp4" : /quicktime|mov/.test(t||"") ? "mov" : "webm";
+let cam = { stream:null, rec:null, chunks:[], facing:"environment", mime:"", offset:0, t0:0, busy:false };
+const canRecordInApp = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+function decideCamMode(){
+  if(!canRecordInApp()) return "picker";
+  try{ const pp=document.permissionsPolicy||document.featurePolicy; if(pp && pp.allowsFeature && !pp.allowsFeature("camera")) return "picker"; }catch{}
+  return "inapp";
+}
+let camMode = decideCamMode();   // "inapp" = record on the timer screen; "picker" = open the phone's camera app
+async function openCam(){
+  let s;
+  try{ s = await navigator.mediaDevices.getUserMedia({video:{facingMode:cam.facing,width:{ideal:1280},height:{ideal:720}},audio:true}); }
+  catch(e){ if(e && (e.name==="NotAllowedError"||e.name==="SecurityError")) throw e; s = await navigator.mediaDevices.getUserMedia({video:{facingMode:cam.facing},audio:false}); }
+  cam.stream=s; const v=$("#camVid"); v.srcObject=s; try{ await v.play(); }catch{}
+  $("#camWrap").classList.remove("hidden");
+}
+function closeCam(){ try{ cam.stream && cam.stream.getTracks().forEach(t=>t.stop()); }catch{} cam.stream=null; $("#camVid").srcObject=null; $("#camWrap").classList.add("hidden"); updRecUi(); }
+function pickMime(){ for(const m of ["video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"]) { try{ if(MediaRecorder.isTypeSupported(m)) return m; }catch{} } return ""; }
+function overlayStream(){
+  try{
+    const v=$("#camVid"), cv=document.createElement("canvas");
+    if(!cv.captureStream) return null;
+    const vt=cam.stream.getVideoTracks()[0], st=vt&&vt.getSettings?vt.getSettings():{};
+    let w=st.width||v.videoWidth||1280, h=st.height||v.videoHeight||720; const sc=Math.min(1,960/Math.max(w,h)); w=Math.round(w*sc); h=Math.round(h*sc);
+    cv.width=w; cv.height=h; const g=cv.getContext("2d");
+    const pad=Math.round(h*0.03), fs=Math.max(14,Math.round(h*0.055));
+    const draw=()=>{
+      if(!cam.drawing) return;
+      try{ g.drawImage(v,0,0,w,h); }catch{}
+      const e=active?elapsed():0, now=new Date();
+      const line1=`● SEIZURE ${fmtDur(e)}`, n=(active&&active.vnsAtSec||[]).length;
+      const line2=`${now.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})} ${now.toLocaleTimeString("en-GB")}${n?` · VNS ${n}/${vnsMax()}`:""}${active&&active.rescueAtSec!=null?" · Rescue med given":""}`;
+      g.font=`800 ${fs}px Inter,system-ui,sans-serif`; const w1=g.measureText(line1).width;
+      g.font=`600 ${Math.round(fs*0.6)}px Inter,system-ui,sans-serif`; const w2=g.measureText(line2).width;
+      const bw=Math.max(w1,w2)+pad*2, bh=fs*1.9+pad;
+      g.fillStyle="rgba(10,14,28,.72)"; g.beginPath(); (g.roundRect?g.roundRect(pad,pad,bw,bh,pad*.6):g.rect(pad,pad,bw,bh)); g.fill();
+      g.fillStyle="#ff5a5f"; g.font=`800 ${fs}px Inter,system-ui,sans-serif`; g.textBaseline="top"; g.fillText(line1,pad*2,pad*1.4);
+      g.fillStyle="#e8edf7"; g.font=`600 ${Math.round(fs*0.6)}px Inter,system-ui,sans-serif`; g.fillText(line2,pad*2,pad*1.4+fs*1.15);
+      cam.raf=requestAnimationFrame(draw);
+    };
+    cam.drawing=true; draw();
+    const out=cv.captureStream(25); cam.stream.getAudioTracks().forEach(t=>out.addTrack(t));
+    return out;
+  }catch(e){ console.warn("overlay",e); return null; }
+}
+function beginRecorder(){
+  const mime=pickMime(); cam.chunks=[]; cam.mime=mime||"video/webm";
+  const src=overlayStream()||cam.stream;
+  cam.rec = new MediaRecorder(src, mime?{mimeType:mime, videoBitsPerSecond:2500000}:{});
+  cam.offset=Math.round(elapsed()); cam.t0=Date.now();
+  cam.rec.ondataavailable=e=>{ if(e.data && e.data.size) cam.chunks.push(e.data); };
+  cam.rec.start(1000);
+  addEvent("Video recording started"); updRecUi();
+}
+function stopRec(){
+  return new Promise(res=>{
+    const r=cam.rec; if(!r){ closeCam(); return res(); }
+    cam.drawing=false; try{ cancelAnimationFrame(cam.raf); }catch{}
+    const offset=cam.offset, t0=cam.t0, type=cam.mime.split(";")[0];
+    cam.rec=null;
+    r.onstop=async()=>{ const blob=new Blob(cam.chunks,{type}); cam.chunks=[]; closeCam();
+      if(blob.size) await storeClip(blob, offset, Math.round((Date.now()-t0)/1000)); res(); };
+    try{ r.stop(); }catch{ closeCam(); res(); }
+  });
+}
+function makeThumb(blob){
+  return new Promise(res=>{
+    try{ const v=document.createElement("video"), url=URL.createObjectURL(blob); let done=false;
+      const fin=d=>{ if(done) return; done=true; URL.revokeObjectURL(url); res(d); };
+      v.muted=true; v.playsInline=true; v.preload="auto"; v.src=url;
+      v.onloadeddata=()=>{ try{ v.currentTime=Math.min(1,(v.duration||2)/2); }catch{ fin(null); } };
+      v.onseeked=()=>{ try{ const c=document.createElement("canvas"), S=160, r=v.videoWidth/v.videoHeight||1; c.width=S; c.height=S;
+        const g=c.getContext("2d"), sw=r>1?v.videoHeight:v.videoWidth, sx=(v.videoWidth-sw)/2, sy=(v.videoHeight-sw)/2; g.drawImage(v,sx,sy,sw,sw,0,0,S,S); fin(c.toDataURL("image/jpeg",0.7)); }catch{ fin(null); } };
+      v.onerror=()=>fin(null); setTimeout(()=>fin(null),6000);
+    }catch{ res(null); }
+  });
+}
+const thumbCache={};
+function fillThumbs(){
+  document.querySelectorAll(".thumb[data-vk]").forEach(async el=>{
+    const k=el.dataset.vk;
+    if(thumbCache[k]===undefined){ try{ const row=await VDB.get(k); thumbCache[k]=row&&row.thumb||null; }catch{ thumbCache[k]=null; } }
+    if(thumbCache[k]) el.style.backgroundImage=`url(${thumbCache[k]})`; else el.innerHTML=`<span style="display:grid;place-items:center;height:100%;color:var(--muted)">${I("🎥")}</span>`;
+  });
+}
+async function storeClip(blob, offset, dur){
+  const key=uid(), clip={key, offsetSec:offset, durationSec:dur||null, type:blob.type||"video/mp4"};
+  const thumb=await makeThumb(blob);
+  try{ await VDB.put({key, blob, thumb, type:clip.type, created:Date.now()}); clip.stored=true; thumbCache[key]=thumb||null; }
+  catch(e){ console.warn(e); clip.stored=false; }
+  if(active){ active.videos=active.videos||[]; active.videos.push(clip); persistActive(); syncActive(); if(!clip.stored){ cam.unsaved=cam.unsaved||{}; cam.unsaved[key]=blob; } }
+  toast(clip.stored ? "Video saved in the app" : "Video kept until the seizure ends – save it to the phone then");
+}
+function updRecUi(){
+  const b=$("#recBtn"); if(!b) return;
+  b.classList.toggle("on", !!cam.rec); $("#timer").classList.toggle("recording", !!cam.stream);
+  b.innerHTML = cam.rec ? ico("⏹","Stop video") : camMode==="picker" ? ico("🎥","Record video") : ico("🎥","Record video");
+}
+function openCameraApp(){
+  // must run straight from the tap (no waiting first) or the phone ignores it
+  cam.pendingOffset=Math.round(elapsed());
+  const inp=$("#vidCapture");
+  try{ if(inp.showPicker) inp.showPicker(); else inp.click(); }catch{ inp.click(); }
+  toast("Opening the camera – the timer keeps counting");
+}
+$("#recBtn").onclick=async()=>{
+  if(cam.busy) return;
+  unlockAudio();
+  if(!cam.rec && camMode==="picker"){ openCameraApp(); return; }
+  cam.busy=true;
+  try{
+    if(cam.rec){ await stopRec(); addEvent("Video recording stopped"); return; }
+    try{ await openCam(); beginRecorder(); }
+    catch(e){ console.warn("camera",e); closeCam(); camMode="picker"; updRecUi();
+      toast("Camera blocked here – tap the button again to use the camera app"); }
+  } finally { cam.busy=false; }
+};
+updRecUi();
+$("#vidCapture").onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f || !active) return;
+  addEvent("Video recorded (camera app)");
+  await storeClip(f, cam.pendingOffset||0, null);
+};
+$("#camFlip").onclick=async()=>{
+  if(cam.busy || !cam.rec) return; cam.busy=true;
+  try{ await stopRec(); cam.facing = cam.facing==="environment" ? "user" : "environment"; await openCam(); beginRecorder(); }
+  catch(e){ toast("Couldn't switch camera"); closeCam(); }
+  finally{ cam.busy=false; }
+};
+$("#camTest").onclick=async()=>{
+  const out=$("#camTestOut");
+  if(camMode==="picker"){ out.textContent="Here, Record video opens the phone's camera app. The timer keeps counting, but the alarm can't sound while the camera app is open. The installed app records on the timer screen instead."; return; }
+  try{ const s=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); s.getTracks().forEach(t=>t.stop());
+       out.textContent="✓ Camera and microphone ready. Video records on the timer screen, with the alarm still working."; }
+  catch(e){ camMode="picker"; updRecUi(); out.textContent = "The camera isn't available here, so the phone's camera app will open instead. While it's open the alarm can't sound – keep an eye on the time. Installing the app avoids this."; }
+};
+async function playClip(clip){
+  let row;
+  try{ row = await VDB.get(clip.key); }catch{}
+  const blob = row ? row.blob : null;
+  const box=document.getElementById("pl-"+clip.key);
+  if(!blob){ box.innerHTML=`<div class="note">This video isn't on this phone (it was recorded on another device or the app's storage was cleared).</div>`; return; }
+  const url=URL.createObjectURL(blob);
+  box.innerHTML=`<div class="player"><video controls playsinline src="${url}"></video><span class="el">Seizure time ${fmtDur(clip.offsetSec)}</span></div>`;
+  const v=box.querySelector("video"), el=box.querySelector(".el");
+  v.ontimeupdate=()=>{ el.textContent="Seizure time "+fmtDur(clip.offsetSec+v.currentTime); };
+  v.play().catch(()=>{});
+}
+async function saveClip(rec, clip, i){
+  let row; try{ row=await VDB.get(clip.key); }catch{}
+  if(!row){ toast("This video isn't on this phone"); return; }
+  const d=new Date(rec.start), name=`seizure-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}-clip${i+1}.${vidExt(row.type)}`;
+  if(await saveFile(name, row.blob, row.type)) toast("Video saved to the phone"); else toast("Couldn't save the video");
+}
+
+// ---------- recovery position ----------
+const RP_SVG=`<svg viewBox="0 0 340 200" role="img" aria-label="Child lying on their side in the recovery position"><rect x="0" y="0" width="340" height="200" fill="#262a35"/><line x1="8" y1="162" x2="332" y2="162" stroke="#4a5060" stroke-width="3" stroke-linecap="round"/><g stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M74 146 L22 154" stroke="#262a35" stroke-width="18"/><path d="M74 146 L22 154" stroke="#5f7fd0" stroke-width="11"/><path d="M190 140 L304 150" stroke="#262a35" stroke-width="22"/><path d="M190 140 L304 150" stroke="#5f7fd0" stroke-width="15"/><path d="M76 136 L188 136" stroke="#262a35" stroke-width="41"/><path d="M76 136 L188 136" stroke="#8fb0ff" stroke-width="34"/><path d="M186 128 L226 156 L282 156" stroke="#262a35" stroke-width="23"/><path d="M186 128 L226 156 L282 156" stroke="#c4d4ff" stroke-width="16"/><path d="M92 124 L118 156 L62 150" stroke="#262a35" stroke-width="18"/><path d="M92 124 L118 156 L62 150" stroke="#c4d4ff" stroke-width="11"/></g><circle cx="48" cy="128" r="22" fill="#262a35"/><circle cx="48" cy="128" r="19" fill="#8fb0ff"/><circle cx="40" cy="124" r="2.6" fill="#1d2029"/><path d="M36 136 q4 4 9 2" stroke="#1d2029" stroke-width="2" fill="none" stroke-linecap="round"/><g fill="#f2f3f7" font-size="12" font-family="system-ui,sans-serif"><text x="6" y="20">Head tilted back,</text><text x="6" y="35">chin up – airway open</text><path d="M44 40 L46 102" stroke="#f2f3f7" stroke-width="1.5"/><text x="150" y="20">Top hand under cheek</text><path d="M170 26 L70 146" stroke="#f2f3f7" stroke-width="1.5"/><text x="222" y="72">Top knee bent,</text><text x="222" y="87">resting on floor</text><path d="M240 92 L228 150" stroke="#f2f3f7" stroke-width="1.5"/><text x="6" y="190">Bottom arm out in front</text><path d="M40 180 L30 158" stroke="#f2f3f7" stroke-width="1.5"/><text x="222" y="190">Bottom leg straight</text><path d="M300 179 L300 154" stroke="#f2f3f7" stroke-width="1.5"/></g></svg>`;
+function openRecovery_guide(back){
+  showSheet(`<h3>Recovery position</h3><div class="rp">
+   <p style="color:var(--muted);margin:4px 0 10px">Once the jerking has stopped. Follow the care plan if it says something different.</p>
+   ${RP_SVG}
+   <ol>
+    <li>Kneel beside them. Put the <b>arm nearest you</b> out at a right angle, elbow bent, palm up.</li>
+    <li>Bring the <b>far arm</b> across the chest. Hold the back of that hand against the cheek nearest you.</li>
+    <li>With your other hand, <b>bend the far knee</b> up, foot flat on the floor.</li>
+    <li>Pull on that knee to <b>roll them towards you</b> onto their side.</li>
+    <li>Leave the top leg bent at a right angle. <b>Tilt the head back</b> and lift the chin so they can breathe and anything in the mouth can drain out.</li>
+    <li><b>Stay with them</b> and watch their breathing until they've fully recovered.</li>
+   </ol>
+   <div class="note warn">Don't put anything in their mouth or hold them down during a seizure. If they stop breathing normally, call 999.</div>
+  </div><div class="dialog-btns"><button class="primary" id="rpClose">${back||"Close"}</button></div>`);
+  $("#rpClose").onclick=hideSheet;
+}
+$("#recovBtn").onclick=()=>openRecovery_guide("Back to timer");
+
+// ---------- 999 operator card ----------
+let opTick=null;
+function opHTML(){
+  if(!active) return "";
+  const e=elapsed(), ev=active.events||[];
+  const vns=(active.vnsAtSec||[]), med=active.rescueAtSec;
+  const clock=sec=>fmtTime(active.start+sec*1000);
+  const seen=ev.filter(x=>!/^(VNS magnet|Rescue medication|Video recording|Video recorded)/.test(x.label));
+  const L=[];
+  if(settings.addr) L.push(`<span class="k">Address</span><span class="addr">${settings.addr.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean).map(x=>`<b>${esc(x)}</b>`).join("<br>")}</span>`);
+  L.push(`<span class="k">Who</span><b>${esc(settings.name||"My child")}</b>${settings.age?`, age ${esc(settings.age)}`:""}`);
+  L.push(`<span class="k">What's happening</span>Seizure started at <b>${fmtTime(active.start)}</b> – it has lasted <b>${fmtDur(e)}</b> so far.`);
+  L.push(`<span class="k">VNS magnet</span>${vns.length?`<b>Swiped ${vns.length} time${vns.length>1?"s":""}</b>`+vns.map((v,i)=>`<span class="li">${i+1}. at ${clock(v)} (${fmtDur(v)} in)</span>`).join(""):"Not used yet."}`);
+  L.push(`<span class="k">Rescue medication</span>${med!=null?`Given at <b>${clock(med)}</b> (${fmtDur(med)} into the seizure), ${fmtDur(e-med)} ago.`:"<b>Not given</b> yet."}`);
+  if(seen.length) L.push(`<span class="k">What I've seen</span>${seen.map(x=>`<span class="li">• ${esc(x.label)} (${fmtDur(x.at)} in)</span>`).join("")}`);
+  const med2=MED_FIELDS.filter(([k])=>settings[k]);
+  if(med2.length) L.push(`<span class="k" style="margin-top:16px;border-top:1px solid var(--line);padding-top:10px">MEDICAL INFORMATION</span>`+med2.map(([k,lab])=>
+    `<div class="mrow"><span class="ml">${esc(lab)}</span>${settings[k].split(/\n+/).map(x=>x.trim()).filter(Boolean).map(x=>`<span class="li"><b>${esc(x)}</b></span>`).join("")}</div>`).join(""));
+  return L.map(x=>`<div>${x}</div>`).join("");
+}
+function openOpCard(){
+  showSheet(`<h3>Tell the 999 operator</h3><div class="op" id="opLive">${opHTML()}</div>
+    ${(!settings.addr||!settings.age)?`<div class="note">Tip: add the address, age and medical details in Settings so they show here.</div>`:""}
+    <div class="dialog-btns"><button class="primary" id="opClose">Back to timer</button></div>`);
+  $("#opClose").onclick=()=>{ clearInterval(opTick); hideSheet(); };
+  clearInterval(opTick); opTick=setInterval(()=>{ const el=$("#opLive"); if(!el||!active){ clearInterval(opTick); return; } el.innerHTML=opHTML(); },1000);
+}
+$("#opBtn").onclick=openOpCard;
+$("#opBtn2").onclick=openOpCard;
+
+// ---------- timer ----------
+let tick=null;
+document.addEventListener("pointerdown",()=>{ unlockAudio(); setTimeout(()=>{ if(actx && actx.state==="running") $("#soundHint").classList.add("hidden"); },60); },{capture:true});
+function ordinal(n){ const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function clusterCount(at){ const h=(settings.clusterH||24)*3600e3; return seizures.filter(x=>x.start>=at-h && x.start<at).length+1; }
+const CALM="Stay calm. Keep the child safe.\nNote what you see.";
+function elapsed(){ return active ? (Date.now()-active.start)/1000 : 0; }
+function persistActive(){ ls.set(LOCAL_ACTIVE, active); }
+function syncActive(){ if(activeRef){ (active?activeRef.set({...active}):activeRef.delete()).catch(()=>{}); } }
+
+$("#startBtn").onclick=()=>{
+  unlockAudio();
+  active={ start:Date.now(), events:[], rescueAtSec:null, muted:false, alarmed:false };
+  persistActive(); syncActive(); openTimer();
+};
+function openTimer(){
+  setTimeout(setEmergency,0);
+  $("#timer").classList.remove("hidden","amber","alarm");
+  $("#tStarted").textContent="Started "+fmtTime(active.start);
+  const am=settings.alertMin||18; $("#tAlarmAt").textContent=`Alarm at ${am}:00`;
+  if(settings.plan){ $("#planBox").textContent=settings.plan; $("#planBox").classList.remove("hidden"); } else $("#planBox").classList.add("hidden");
+  $("#alertBox").classList.add("hidden");
+  if(active && elapsed()<(settings.alertMin||18)*60) active.muted=false;   // can only silence an alarm that is sounding
+  muteLabel();
+  if(elapsed()<(settings.alertMin||18)*60-60) $("#clockSub").textContent=CALM;
+  // cluster
+  const n=active.clusterNo||clusterCount(active.start); active.clusterNo=n;
+  const H=settings.clusterH||24, cb=$("#clusterBox");
+  if(n>=2){ const warn=settings.clusterN>0 && n>=settings.clusterN;
+    cb.className = warn?"warn":""; cb.innerHTML = warn ? `${I("⚠️")} Cluster: ${ordinal(n)} in ${H}h – follow care plan` : `${ordinal(n)} seizure in ${H} hours`; }
+  else cb.className="hidden";
+  $("#soundHint").classList.toggle("hidden", !!(actx && actx.state==="running"));
+  active.stepsShown=active.stepsShown||[]; active.stepsAck=active.stepsAck||[];
+  keepAwake(true); renderEvents(); clearInterval(tick); tick=setInterval(updateClock,250); updateClock();
+}
+function fitTimer(){
+  const t=$("#timer"); if(!t || t.classList.contains("hidden")) return;
+  t.classList.remove("t1","t2","t3");
+  for(const c of ["t1","t2","t3"]){ if(t.scrollHeight<=t.clientHeight+1) break; t.classList.add(c); }
+}
+addEventListener("resize",()=>fitTimer());
+function planSteps(){ return (settings.steps||[]).filter(x=>x.text).map((x,i)=>({i,sec:Math.round(x.min*60),text:x.text})).sort((a,b)=>a.sec-b.sec); }
+function updateSteps(e){
+  const steps=planSteps();
+  // newly due steps
+  steps.forEach(st=>{ if(e>=st.sec && !active.stepsShown.includes(st.i)){ active.stepsShown.push(st.i); persistActive();
+    if(e-st.sec<30) chime(); } });
+  // prompt: earliest shown-but-not-acknowledged
+  const due=steps.find(st=>active.stepsShown.includes(st.i) && !active.stepsAck.includes(st.i));
+  const box=$("#stepBox");
+  $("#timer").classList.toggle("prompting", !!due);
+  if(due){ if(box.dataset.cur!==String(due.i)){ box.dataset.cur=String(due.i);
+      box.innerHTML=`<span class="when">Care plan · ${fmtDur(due.sec)}</span>${esc(due.text)}<div class="btns"><button class="primary" id="stDone">${I("✓")} Done</button><button id="stSkip">Not needed</button></div>`;
+      $("#stDone").onclick=()=>ackStep(due,true); $("#stSkip").onclick=()=>ackStep(due,false); }
+    box.classList.remove("hidden"); }
+  else { box.classList.add("hidden"); box.dataset.cur=""; }
+  const next=steps.find(st=>st.sec>e), ns=$("#nextStep");
+  if(next){ ns.innerHTML=`Next at ${fmtDur(next.sec)}: <b>${esc(next.text)}</b> (in ${fmtDur(next.sec-e)})`; ns.classList.remove("hidden"); } else ns.classList.add("hidden");
+}
+function ackStep(st,done){ active.stepsAck.push(st.i); active.events.push({at:Math.round(elapsed()),label:(done?"Done: ":"Not needed: ")+st.text}); persistActive(); syncActive(); renderEvents(); updateSteps(elapsed()); }
+function updateClock(){
+  if(!active) return;
+  const e=elapsed(), am=(settings.alertMin||18)*60;
+  $("#clock").textContent=fmtDur(e); $("#clock").classList.toggle("long", e>=3600);
+  updateSteps(e); updateVns(e);
+  fitTimer();
+  if(cam.rec) $("#recDot").textContent="● REC "+fmtDur((Date.now()-cam.t0)/1000);
+  const T=$("#timer");
+  T.classList.toggle("amber", e>=am-60 && e<am);
+  T.classList.toggle("alarm", e>=am);
+  if(e<am){ $("#alertBox").classList.add("hidden"); if(settings.plan) $("#planBox").classList.remove("hidden"); if(beepTimer) stopAlarm(); if(e<am-60) $("#clockSub").textContent=CALM; }
+  if(e>=am){
+    $("#alertText").textContent=`Seizure has lasted over ${settings.alertMin||18} minute${(settings.alertMin||18)==1?"":"s"}`;
+    $("#alertPlan").textContent=settings.plan || "Follow the care plan.";
+    $("#alertBox").classList.remove("hidden"); $("#planBox").classList.add("hidden");
+    $("#clockSub").textContent=`Over ${settings.alertMin||18} minutes`;
+    if(!active.alarmed){ active.alarmed=true; persistActive(); }
+    startAlarm();
+  } else if(e>=am-60){ $("#clockSub").textContent=`Alarm in ${fmtDur(am-e)}`; }
+}
+function renderEvents(){
+  $("#tEvents").innerHTML = (active.events||[]).map(ev=>`<div>${esc(fmtDur(ev.at))} — ${esc(ev.label)}</div>`).join("");
+}
+function addEvent(label){ active.events.push({at:Math.round(elapsed()),label}); persistActive(); syncActive(); renderEvents(); toast(label+" at "+fmtDur(elapsed())); }
+// ---------- VNS swipe timer: after the 1st swipe, alarm when each next swipe is due, up to the maximum ----------
+let vnsBeepT=null;
+function vnsBeep(){ try{ if(actx){ const t=actx.currentTime; [0,0.14,0.28,0.42].forEach(off=>{ const o=actx.createOscillator(), g=actx.createGain();
+  o.type="triangle"; o.frequency.value=1320; g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(0.45,t+off+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.1);
+  o.connect(g).connect(actx.destination); o.start(t+off); o.stop(t+off+0.12); }); } }catch{}
+  try{ navigator.vibrate && navigator.vibrate([120,80,120,80,120]); }catch{} }
+function stopVnsBeep(){ clearInterval(vnsBeepT); vnsBeepT=null; }
+function vnsCount(){ return (active && active.vnsAtSec || []).length; }
+function vnsMax(){ return settings.vnsMax||3; }
+function swipeVns(){
+  if(!active) return; active.vnsAtSec=active.vnsAtSec||[];
+  if(active.vnsAtSec.length>=vnsMax()){ toast(`Maximum of ${vnsMax()} swipes reached`); return; }
+  active.vnsAtSec.push(Math.round(elapsed())); stopVnsBeep();
+  const n=active.vnsAtSec.length; addEvent(`VNS magnet swiped (${n} of ${vnsMax()})`); updateVns(elapsed());
+}
+$("#vnsBtn").onclick=swipeVns;
+function updateVns(e){
+  const box=$("#vnsBox"), btn=$("#vnsBtn"), n=vnsCount(), max=vnsMax(), gap=settings.vnsGapSec||60;
+  btn.disabled = n>=max || !!active.vnsStopped;
+  btn.innerHTML = ico("⚡", n===0 ? "VNS swiped" : n>=max ? `VNS done (${max}/${max})` : `VNS swiped (${n}/${max})`);
+  if(n===0 || active.vnsStopped || n>=max) $("#timer").classList.remove("vnsdue");
+  if(n===0 || active.vnsStopped){ box.className="hidden"; stopVnsBeep(); return; }
+  if(n>=max){ const sinceLast=e-active.vnsAtSec[n-1];
+    if(sinceLast<8){ box.className="done"; box.innerHTML=`<span class="vt">VNS</span><span class="vs" style="font-size:15px;color:var(--text)">${I("✓")} All ${max} swipes done</span>`; } else box.className="hidden";
+    stopVnsBeep(); return; }
+  const dueAt=active.vnsAtSec[n-1]+gap, left=dueAt-e, pct=Math.max(0,Math.min(100,100*(gap-left)/gap));
+  $("#timer").classList.toggle("vnsdue", left<=0);
+  if(left<=0){
+    if(!box.classList.contains("due")){ box.className="due"; box.innerHTML=`<span class="vt">VNS · swipe ${n+1} of ${max}</span><button id="vnsNow">${I("⚡")} Swiped</button><span class="vc">Swipe now</span><span class="vs">Overdue by <b id="vnsOver">0:00</b> · <a href="#" id="vnsStop" style="color:var(--muted)">No more swipes</a></span>`;
+      $("#vnsNow").onclick=swipeVns; $("#vnsStop").onclick=ev=>{ ev.preventDefault(); active.vnsStopped=true; persistActive(); addEvent("VNS: no more swipes"); updateVns(elapsed()); }; }
+    const o=$("#vnsOver"); if(o) o.textContent=fmtDur(-left);
+    if(!vnsBeepT){ vnsBeep(); vnsBeepT=setInterval(vnsBeep,3000); }
+  } else {
+    stopVnsBeep();
+    if(box.className!=="" || !$("#vnsCd")){ box.className=""; box.innerHTML=`<span class="vt">VNS · next swipe (${n+1} of ${max})</span><button id="vnsNow">${I("⚡")} Swiped</button><span class="vc" id="vnsCd"></span><div class="bar"><i id="vnsBar"></i></div>`; $("#vnsNow").onclick=swipeVns; }
+    $("#vnsCd").textContent=fmtDur(left); $("#vnsBar").style.width=pct+"%";
+  }
+}
+$("#medBtn").onclick=()=>{ if(active.rescueAtSec==null) active.rescueAtSec=Math.round(elapsed()); addEvent("Rescue medication given"); };
+$("#markBtn").onclick=()=>{
+  const marked=l=>(active.events||[]).some(ev=>ev.label===l);
+  showSheet(`<h3>Mark what you see</h3><div class="sub" style="color:var(--muted)">Tap everything that applies – each is timed when you tap it. Tap again to undo.</div>
+   <div class="chips" style="margin-top:12px">${MARKS.map(c=>`<button class="chip ${marked(c)?"on":""}" data-mark="${esc(c)}">${esc(c)}</button>`).join("")}</div>
+   <label>Or type a note</label><input id="markTxt" placeholder="What did you see?">
+   <div class="dialog-btns"><button class="primary" id="mSave">${I("✓")} Done</button></div>`);
+  document.querySelectorAll("[data-mark]").forEach(b=>b.onclick=()=>{
+    const l=b.dataset.mark;
+    if(b.classList.contains("on")){ for(let i=active.events.length-1;i>=0;i--) if(active.events[i].label===l){ active.events.splice(i,1); break; } b.classList.remove("on"); }
+    else { active.events.push({at:Math.round(elapsed()),label:l}); b.classList.add("on"); }
+    persistActive(); syncActive(); renderEvents(); });
+  $("#mSave").onclick=()=>{ const v=$("#markTxt").value.trim(); if(v){ active.events.push({at:Math.round(elapsed()),label:v}); persistActive(); syncActive(); renderEvents(); } hideSheet(); };
+};
+function muteLabel(){ const b=$("#muteBtn"); if(!b||!active) return;
+  b.classList.toggle("off", !!active.muted);
+  b.innerHTML = active.muted
+    ? `<span class="em">${I("🔔")}</span> Alarm sound back on<small>(currently silent)</small>`
+    : `<span class="em">${I("🔕")}</span> Stop alarm sound<small>(timer keeps running)</small>`; }
+$("#muteBtn").onclick=()=>{ if(!active) return; active.muted=!active.muted; persistActive(); if(active.muted) stopAlarm(); else { unlockAudio(); startAlarm(); } muteLabel(); };
+$("#cancelBtn").onclick=()=>confirmSheet("Discard this timer?","Nothing will be saved, including any video.","Discard",async()=>{
+  await stopRec(); (active&&active.videos||[]).forEach(v=>VDB.del(v.key).catch(()=>{}));
+  closeTimer(); active=null; ls.del(LOCAL_ACTIVE); syncActive(); });
+$("#stopBtn").onclick=async()=>{
+  const dur=Math.round(elapsed());
+  if(cam.rec){ $("#stopBtn").textContent="Saving video…"; await stopRec(); $("#stopBtn").innerHTML=ico0("✓","SEIZURE ENDED"); }
+  const rec={ id:uid(), start:active.start, durationSec:dur, type:"", triggers:[], signs:[],
+              rescueMed:active.rescueAtSec!=null, rescueAtSec:active.rescueAtSec, vns:!!(active.vnsAtSec&&active.vnsAtSec.length), vnsCount:(active.vnsAtSec||[]).length, vnsAtSec:active.vnsAtSec||[], recoveryMin:null, notes:"", events:active.events||[], videos:(active.videos||[]).map(v=>({key:v.key,offsetSec:v.offsetSec,durationSec:v.durationSec,type:v.type})) };
+  const unsaved=cam.unsaved||{}; cam.unsaved={};
+  rec.by=me||undefined; rec.clusterNo=active.clusterNo;
+  { const a=autoFromEvents(rec.events); rec.signs=a.signs; rec.actions=a.actions; if(a.notes) rec.notes=a.notes; }
+  closeTimer(); active=null; ls.del(LOCAL_ACTIVE); syncActive();
+  saveSeizure(rec);
+  startRecovery(rec);
+  for(const [k,b] of Object.entries(unsaved)){ const i=rec.videos.findIndex(v=>v.key===k); if(i>=0) saveFile(`seizure-clip${i+1}.${vidExt(b.type)}`, b, b.type); }
+};
+function closeTimer(){ setTimeout(setEmergency,0); if(cam.rec) stopRec(); else closeCam(); clearInterval(tick); stopAlarm(); stopVnsBeep(); $("#vnsBox").className="hidden"; keepAwake(false); $("#timer").classList.add("hidden"); $("#clockSub").textContent=CALM; }
+
+// ---------- seizure passport ----------
+function passportHTML(forFile){
+  const L=x=>esc(x).replace(/\n/g,"<br>");
+  const steps=planSteps();
+  const med=MED_FIELDS.filter(([k])=>settings[k]).map(([k,lab])=>`<tr><th>${esc(lab)}</th><td>${L(settings[k])}</td></tr>`).join("");
+  const svg=RP_SVG.replace(/#262a35/g,"#eef2f8").replace(/#f2f3f7/g,"#1d2433").replace(/#4a5060/g,"#9aa3b5");
+  const body=`
+  <h1>Seizure passport${settings.name?` – ${esc(settings.name)}`:""}</h1>
+  <p class="meta">${settings.age?`Age / DOB: ${esc(settings.age)} · `:""}Updated ${fmtDate(Date.now())}</p>
+  <div class="em"><b>Call 999</b> if a seizure lasts more than <b>${settings.alertMin||18} minutes</b>, if one seizure follows another without recovery, if they're injured, or if breathing doesn't return to normal.</div>
+  ${steps.length?`<h2>During a seizure – care plan steps</h2><table class="steps">${steps.map(st=>`<tr><th>${fmtDur(st.sec)}</th><td>${esc(st.text)}</td></tr>`).join("")}</table>`:""}
+  ${settings.plan?`<h2>Care plan notes</h2><p>${L(settings.plan)}</p>`:""}
+  <h2>What to do</h2><ul><li>Stay calm and note the time it started.</li><li>Move hard objects away; cushion the head. Don't hold them down or put anything in their mouth.</li><li>When the jerking stops, put them in the recovery position and stay with them until fully recovered.</li></ul>
+  ${med?`<h2>Medical information</h2><table>${med}</table>`:""}
+  ${settings.contacts?`<h2>Emergency contacts</h2><p>${L(settings.contacts)}</p>`:""}
+  ${settings.addr?`<h2>Home address</h2><p>${L(settings.addr)}</p>`:""}
+  <h2>Recovery position</h2><div class="rp">${svg}</div>`;
+  if(!forFile) return body;
+  return `<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Seizure passport</title>
+  <style>body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d2433;max-width:760px;margin:24px auto;padding:0 18px}
+  h1{font-size:24px;margin:0}h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#3b5bb5;margin:20px 0 6px;border-bottom:1px solid #dfe5f0;padding-bottom:4px}
+  .meta{color:#667085;margin:4px 0 14px}.em{background:#fde8e8;border:2px solid #d92d20;border-radius:10px;padding:12px 14px;font-size:16px}
+  table{border-collapse:collapse;width:100%}th{text-align:left;vertical-align:top;width:34%;padding:6px 8px;background:#f4f6fb;border:1px solid #e3e8f2}td{padding:6px 8px;border:1px solid #e3e8f2}
+  table.steps th{width:70px;font-variant-numeric:tabular-nums}.rp svg{width:100%;max-width:520px;height:auto}
+  @media print{body{margin:0}h2{break-after:avoid}}</style></head><body>${body}</body></html>`;
+}
+$("#passView").onclick=()=>{ showSheet(`<div class="passprev" style="background:#fff;color:#1d2433;border-radius:12px;padding:16px">${passportHTML(false)}</div><div class="dialog-btns"><button id="pvClose">Close</button><button class="primary" id="pvDl">${I("⬇")} Download to print</button></div>`);
+  $("#pvClose").onclick=hideSheet; $("#pvDl").onclick=()=>$("#passDl").click(); };
+$("#passDl").onclick=async()=>{ const ok=await saveFile(`seizure-passport${settings.name?"-"+settings.name.replace(/[^a-z0-9]+/gi,"-").toLowerCase():""}.html`, passportHTML(true), "text/html");
+  toast(ok?"Saved – open it and use Print or Share":"Couldn't save the passport"); };
+
+// ---------- recovery timer ----------
+const LOCAL_RECOV="st_recov_v1"; let recov=null, rTick=null;
+function startRecovery(rec){ recov={id:rec.id, endAt:rec.start+rec.durationSec*1000, lasted:rec.durationSec, checks:[], lastCheck:Date.now()}; ls.set(LOCAL_RECOV,recov); openRecovery(); }
+function openRecovery(){
+  setTimeout(setEmergency,0);
+  $("#recov").classList.remove("hidden"); keepAwake(true);
+  $("#rEnded").textContent="Seizure ended "+fmtTime(recov.endAt); $("#rLasted").textContent="Lasted "+fmtDur(recov.lasted);
+  clearInterval(rTick); rTick=setInterval(updRecov,500); updRecov(); renderRecLog();
+}
+function recElapsed(){ return (Date.now()-recov.endAt)/1000; }
+function updRecov(){
+  if(!recov) return;
+  $("#rClock").textContent=fmtDur(recElapsed());
+  const every=(settings.recCheckMin??5)*60, box=$("#rCheck");
+  const since=(Date.now()-recov.lastCheck)/1000;
+  if(every>0 && since>=every){
+    if(!box.classList.contains("due")){ box.classList.add("due"); chime(); }
+    box.innerHTML=`<h4>${I("⏱")} Time to check</h4><p>Are they breathing normally? Is their colour normal?</p><div class="btns"><button class="primary" id="rOk">${I("✓")} Breathing OK</button><a class="callmini" href="tel:999">${I("📞")} Call 999</a></div>`;
+    $("#rOk").onclick=()=>{ recov.checks.push(Math.round(recElapsed())); recov.lastCheck=Date.now(); ls.set(LOCAL_RECOV,recov); box.classList.remove("due"); renderRecLog(); updRecov(); };
+  } else if(every>0){
+    box.classList.remove("due");
+    box.innerHTML=`<h4>Next breathing check in ${fmtDur(every-since)}</h4><p>Keep them on their side and stay with them.</p><div class="btns"><button id="rOkNow">${I("✓")} Checked now – breathing OK</button></div>`;
+    $("#rOkNow").onclick=()=>{ recov.checks.push(Math.round(recElapsed())); recov.lastCheck=Date.now(); ls.set(LOCAL_RECOV,recov); renderRecLog(); updRecov(); };
+  } else box.innerHTML="";
+}
+function renderRecLog(){ $("#rLog").innerHTML=(recov.checks||[]).map(c=>`<div>${fmtDur(c)} after — breathing checked, OK</div>`).join(""); }
+function finishRecovery(backToNormal){
+  setTimeout(setEmergency,0);
+  const r=recov; if(!r) return; clearInterval(rTick); recov=null; ls.del(LOCAL_RECOV);
+  $("#recov").classList.add("hidden"); keepAwake(false);
+  const cur=seizures.find(x=>x.id===r.id); if(!cur){ return; }
+  const upd={...cur, events:[...(cur.events||[]), ...r.checks.map(c=>({at:cur.durationSec+c,label:`Recovery check +${fmtDur(c)}: breathing OK`}))]};
+  if(backToNormal){ const mins=Math.max(0,Math.round(recElapsedAt(r)/60)); upd.recoveryMin=mins; upd.events.push({at:cur.durationSec+Math.round(recElapsedAt(r)),label:"Back to normal"}); }
+  saveSeizure(upd); openForm(upd,true);
+}
+function recElapsedAt(r){ return (Date.now()-r.endAt)/1000; }
+$("#rDone").onclick=()=>finishRecovery(true);
+$("#rSkip").onclick=()=>finishRecovery(false);
+$("#rPos").onclick=()=>openRecovery_pos();
+function openRecovery_pos(){ openRecovery_guide(); }
+
+// ---------- forms / sheets ----------
+function showSheet(html){ const sh=$("#sheet"); sh.innerHTML=html; iconize(sh); $("#modal").classList.remove("hidden"); sh.scrollTop=0; }
+function hideSheet(){ $("#modal").classList.add("hidden"); $("#sheet").innerHTML=""; }
+$("#modal").addEventListener("click",e=>{ if(e.target.id==="modal") hideSheet(); });
+function confirmSheet(title,body,okLabel,onOk){
+  showSheet(`<h3>${esc(title)}</h3><p style="color:var(--muted)">${esc(body)}</p><div class="dialog-btns"><button class="ghost" id="cNo">Cancel</button><button class="danger" id="cYes">${esc(okLabel)}</button></div>`);
+  $("#cNo").onclick=hideSheet; $("#cYes").onclick=()=>{ hideSheet(); onOk(); };
+}
+function chipGroup(id, options, selected){ return `<div class="chips" id="${id}">${options.map(o=>`<button type="button" class="chip ${selected.includes(o)?"on":""}" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>`; }
+function readChips(id){ return [...document.querySelectorAll(`#${id} .chip.on`)].map(b=>b.dataset.v); }
+
+function openForm(rec, justEnded){
+  const isNew = !seizures.some(s=>s.id===rec.id);
+  const m=Math.floor((rec.durationSec||0)/60), s=(rec.durationSec||0)%60;
+  const evs=(rec.events||[]);
+  showSheet(`<h3>${justEnded?"Seizure ended – "+fmtDur(rec.durationSec):isNew?"Log a past seizure":"Seizure details"}</h3>
+   ${justEnded?`<button class="primary" id="fRecov" style="width:100%;margin:8px 0;padding:14px"><span class="em">🛌</span> Show recovery position</button><div class="note">Saved. Add details now or later – tap it in the list any time.</div>`:""}
+   <div class="by" id="fBy"></div>
+   <label>Started</label><input type="datetime-local" id="fStart" value="${toLocalInput(rec.start)}">
+   <label>Duration (minutes : seconds)</label>
+   <div class="row"><input type="number" id="fMin" min="0" value="${m}" inputmode="numeric"><input type="number" id="fSec" min="0" max="59" value="${s}" inputmode="numeric"></div>
+   <label>Severity</label><div class="sevpick" id="fSev">${[1,2,3,4,5].map(n=>`<button type="button" class="${rec.severity===n?"on":""}" data-sev="${n}">${n}</button>`).join("")}<span class="sevhint">1 mild · 5 severe</span></div>
+   <label>Type</label><select id="fType"><option value="">— choose —</option>${TYPES.map(t=>`<option ${t===rec.type?"selected":""}>${esc(t)}</option>`).join("")}</select>
+   <label>What you saw${justEnded&&(rec.signs||[]).length?` <span style="color:var(--accent);font-weight:600">· filled in from moments you marked</span>`:""}</label>${chipGroup("fSigns",SIGNS,rec.signs||[])}
+   <label>Actions taken</label>${chipGroup("fActs",ACTIONS,rec.actions||[])}
+   <label>Possible triggers</label>${chipGroup("fTrig",TRIGGERS,rec.triggers||[])}
+   <label>VNS (magnet swipe)</label>
+   <div class="row"><select id="fVns"><option value="no">Not used</option><option value="yes" ${rec.vns?"selected":""}>Used</option></select>
+     <input type="number" id="fVnsN" min="0" inputmode="numeric" placeholder="No. of swipes" value="${rec.vns?(rec.vnsCount||1):""}"></div>
+   <label>Rescue medication</label>
+   <div class="row"><select id="fMed"><option value="no">Not given</option><option value="yes" ${rec.rescueMed?"selected":""}>Given</option></select>
+     <input id="fMedAt" placeholder="at m:ss" value="${rec.rescueAtSec!=null?fmtDur(rec.rescueAtSec):""}"></div>
+   <label>Recovery time (minutes until back to normal)</label><input type="number" id="fRec" min="0" inputmode="numeric" value="${rec.recoveryMin??""}">
+   <label>Notes</label><textarea id="fNotes" placeholder="Where they were, what they were doing, anything unusual">${esc(rec.notes||"")}</textarea>
+   ${(rec.videos||[]).length?`<label>Videos (kept on this phone)</label><div>${rec.videos.map((v,i)=>`<div class="vidrow"><span><span class="em">🎥</span> Clip ${i+1} – from ${fmtDur(v.offsetSec)} into the seizure${v.durationSec?`, ${fmtDur(v.durationSec)} long`:""}</span>
+       <button data-vplay="${i}"><span class="em">▶</span> Play</button><button data-vsave="${i}"><span class="em">⬇</span> Save to phone</button><button class="danger" data-vdel="${i}">Delete</button></div><div id="pl-${esc(v.key)}"></div>`).join("")}</div>`:""}
+   ${evs.length?`<label>Timeline</label><div style="font-size:14px;color:var(--muted)">${evs.map(e=>`${esc(fmtDur(e.at))} — ${esc(e.label)}`).join("<br>")}</div>`:""}
+   <div class="dialog-btns">${isNew?`<button class="ghost" id="fCancel">Cancel</button>`:`<button class="danger" id="fDel">Delete</button>`}<button class="primary" id="fSave">Save</button></div>`);
+  document.querySelectorAll("#fSigns .chip, #fActs .chip, #fTrig .chip").forEach(c=>c.onclick=()=>c.classList.toggle("on"));
+  if($("#fCancel")) $("#fCancel").onclick=hideSheet;
+  document.querySelectorAll("#fSev button").forEach(b=>b.onclick=()=>{ const was=b.classList.contains("on"); document.querySelectorAll("#fSev button").forEach(x=>x.classList.remove("on")); if(!was) b.classList.add("on"); });
+  if(rec.byName){ const el=$("#fBy"); if(el) el.textContent="Logged by "+rec.byName+(rec.demo?" (demo entry)":""); }
+  else if(rec.by && userNs && userNs.profiles){ userNs.profiles([rec.by]).then(ps=>{ const n=(ps&&ps[rec.by]&&ps[rec.by].name)||""; const el=$("#fBy"); if(el && n) el.textContent="Logged by "+n+(rec.clusterNo>1?` · ${ordinal(rec.clusterNo)} in ${settings.clusterH||24}h`:""); }).catch(()=>{}); }
+  else if(rec.clusterNo>1){ const el=$("#fBy"); if(el) el.textContent=`${ordinal(rec.clusterNo)} seizure in ${settings.clusterH||24} hours`; }
+  if($("#fRecov")) $("#fRecov").onclick=()=>{ const r=seizures.find(x=>x.id===rec.id)||rec; openRecovery_guide("Back to seizure details"); $("#rpClose").onclick=()=>openForm(r,false); };
+  document.querySelectorAll("[data-vplay]").forEach(b=>b.onclick=()=>playClip(rec.videos[+b.dataset.vplay]));
+  document.querySelectorAll("[data-vsave]").forEach(b=>b.onclick=()=>saveClip(rec, rec.videos[+b.dataset.vsave], +b.dataset.vsave));
+  document.querySelectorAll("[data-vdel]").forEach(b=>b.onclick=()=>{ const v=rec.videos[+b.dataset.vdel];
+    confirmSheet("Delete this video?","It will be removed from the app. Copies already saved to the phone stay.","Delete",async()=>{
+      try{ await VDB.del(v.key); }catch{} const cur=seizures.find(x=>x.id===rec.id)||rec;
+      const upd={...cur, videos:(cur.videos||[]).filter(x=>x.key!==v.key)}; await saveSeizure(upd); toast("Video deleted"); openForm(upd,false); }); });
+  if($("#fDel")) $("#fDel").onclick=()=>confirmSheet("Delete this seizure?","This can't be undone.","Delete",()=>deleteSeizure(rec.id));
+  $("#fSave").onclick=()=>{
+    const st=new Date($("#fStart").value).getTime();
+    const dur=(parseInt($("#fMin").value)||0)*60+Math.min(59,parseInt($("#fSec").value)||0);
+    let medAt=null; const mv=$("#fMedAt").value.trim();
+    if(mv){ const p=mv.split(":").map(Number); medAt = p.length===2 ? (p[0]||0)*60+(p[1]||0) : (p[0]||0)*60; }
+    const recMin=$("#fRec").value===""?null:Math.max(0,parseInt($("#fRec").value)||0);
+    const sevOn=document.querySelector("#fSev button.on");
+    saveSeizure({ ...rec, severity: sevOn?+sevOn.dataset.sev:null, start:isNaN(st)?rec.start:st, durationSec:dur, type:$("#fType").value,
+      signs:readChips("fSigns"), actions:readChips("fActs"), triggers:readChips("fTrig"), vns:$("#fVns").value==="yes", vnsCount:$("#fVns").value==="yes"?Math.max(1,parseInt($("#fVnsN").value)||1):0, vnsAtSec:$("#fVns").value==="yes"?(rec.vnsAtSec||[]):[], rescueMed:$("#fMed").value==="yes",
+      rescueAtSec:$("#fMed").value==="yes"?medAt:null, recoveryMin:recMin, notes:$("#fNotes").value.trim() });
+    hideSheet(); toast("Saved");
+  };
+}
+$("#fabStart").onclick=()=>$("#startBtn").click();
+$("#addPastBtn").onclick=()=>openForm({id:uid(),by:me||undefined,start:Date.now(),durationSec:60,triggers:[],signs:[],events:[]},false);
+
+// ---------- settings ----------
+$("#saveSettings").onclick=()=>{
+  settings.name=$("#setName").value.trim();
+  settings.alertMin=Math.min(60,Math.max(1,parseInt($("#setAlert").value)||18));
+  settings.plan=$("#setPlan").value.trim();
+  settings.age=$("#setAge").value.trim(); settings.addr=$("#setAddr").value.trim(); settings.medInfo=$("#setMedInfo").value.trim(); settings.docEmail=$("#setDocEmail").value.trim(); document.querySelectorAll(".medf").forEach(t=>settings[t.dataset.k]=t.value.trim());
+  settings.steps=readStepRows().filter(x=>x.text).sort((a,b)=>a.min-b.min);
+  settings.clusterN=Math.max(0,parseInt($("#setClN").value)||0); settings.clusterH=Math.min(72,Math.max(1,parseInt($("#setClH").value)||24));
+  const rc=parseInt($("#setRecChk").value); settings.recCheckMin=isNaN(rc)?5:Math.max(0,Math.min(30,rc));
+  settings.contacts=$("#setContacts").value.trim();
+  settings.vnsGapSec=Math.min(600,Math.max(10,parseInt($("#setVnsGap").value)||60)); settings.vnsMax=Math.min(10,Math.max(1,parseInt($("#setVnsMax").value)||3));
+  renderStepRows(settings.steps); saveSettings(); toast("Settings saved");
+};
+$("#addStep").onclick=()=>{ const l=readStepRows(); const last=l.length?l[l.length-1].min:0; l.push({min:last+1,text:""}); renderStepRows(l); const ins=document.querySelectorAll(".stTxt"); ins[ins.length-1].focus(); };
+
+// ---------- export ----------
+function sumDays(){ const v=parseInt($("#sumDays").value); return isNaN(v)?90:v; }
+function periodLabel(d){ return d===0?"all records":d===30?"last 30 days":d===90?"last 3 months":d===182?"last 6 months":d===365?"last 12 months":`last ${d} days`; }
+function summaryText(daysArg){
+  const days=daysArg===undefined?sumDays():daysArg, list=(days?within(days):[...seizures]).sort((a,b)=>b.start-a.start);   // newest first
+  const durs=list.map(s=>s.durationSec||0);
+  const L=[];
+  L.push(`Seizure log${settings.name?" – "+settings.name:""}`);
+  L.push(`Period: ${periodLabel(days)} (to ${fmtDate(Date.now())})`);
+  L.push(`Total seizures: ${list.length}`);
+  if(list.length){
+    L.push(`Average length: ${fmtDur(durs.reduce((a,b)=>a+b,0)/list.length)}   Longest: ${fmtDur(Math.max(...durs))}`);
+    L.push(`VNS magnet used: ${list.filter(s=>s.vns).length} time(s)`);
+    L.push(`Rescue medication given: ${list.filter(s=>s.rescueMed).length} time(s)`);
+    const tc={}; list.forEach(s=>(s.triggers||[]).forEach(t=>tc[t]=(tc[t]||0)+1));
+    const tt=Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${t} (${n})`).join(", ");
+    if(tt) L.push(`Possible triggers noted: ${tt}`);
+    L.push("");
+    list.forEach(s=>{
+      L.push(`${fmtDate(s.start)} ${fmtTime(s.start)} – ${fmtDur(s.durationSec)}${s.type?" – "+s.type:""}${s.severity?` – severity ${s.severity}/5`:""}${s.vns?" – VNS"+(s.vnsCount>1?" ×"+s.vnsCount:"")+((s.vnsAtSec||[]).length?" at "+s.vnsAtSec.map(fmtDur).join(", "):""):""}${s.rescueMed?" – rescue med"+(s.rescueAtSec!=null?" at "+fmtDur(s.rescueAtSec):""):""}${s.recoveryMin!=null?" – recovery "+s.recoveryMin+" min":""}`);
+      if((s.signs||[]).length) L.push(`   Seen: ${s.signs.join(", ")}`);
+      if((s.actions||[]).length) L.push(`   Actions: ${s.actions.join(", ")}`);
+      if(s.notes) L.push(`   Notes: ${s.notes}`);
+      if((s.videos||[]).length) L.push(`   Video recorded: ${s.videos.length} clip(s)`);
+    });
+  }
+  return L.join("\n");
+}
+function emailParts(){
+  const who=settings.name||"my child", days=sumDays();
+  const subject=`Seizure log – ${settings.name||"child"} – ${periodLabel(days)}`;
+  let body=`Hello,\n\nPlease find below the seizure log for ${who} (${periodLabel(days)}).\n\n${summaryText(days)}\n\nKind regards`;
+  return {to:settings.docEmail||"", subject, body};
+}
+function fitBody(body, max){
+  if(body.length<=max) return body;
+  return body.slice(0,max).replace(/\n[^\n]*$/,"")+`\n\n[Log shortened to fit – download the spreadsheet for the full record.]\n\nKind regards`;
+}
+function mailHref(via){
+  const e=emailParts(), enc=encodeURIComponent;
+  if(via==="gmail"){
+    const web=`https://mail.google.com/mail/?view=cm&fs=1&to=${enc(e.to)}&su=${enc(e.subject)}&body=${enc(fitBody(e.body,6000))}`;
+    // Android: open the Gmail app itself; if it isn't installed, Chrome falls back to Gmail on the web
+    if(/Android/i.test(navigator.userAgent)){
+      const q=`subject=${enc(e.subject)}&body=${enc(fitBody(e.body,3000))}`;
+      return `intent:${enc(e.to).replace(/%40/g,"@")}?${q}#Intent;scheme=mailto;package=com.google.android.gm;S.browser_fallback_url=${enc(web)};end`;
+    }
+    return web;
+  }
+  if(via==="outlook") return `https://outlook.live.com/mail/0/deeplink/compose?to=${enc(e.to)}&subject=${enc(e.subject)}&body=${enc(fitBody(e.body,6000))}`;
+  return `mailto:${enc(e.to).replace(/%40/g,"@")}?subject=${enc(e.subject)}&body=${enc(fitBody(e.body,1800))}`;
+}
+function refreshMailLinks(){ const framed=(()=>{ try{ return window.self!==window.top; }catch{ return true; } })();
+  document.querySelectorAll("a.mail").forEach(a=>{ a.href=mailHref(a.dataset.via); if(!framed && a.dataset.via!=="outlook") a.target="_self"; }); }
+document.querySelectorAll("a.mail").forEach(a=>a.addEventListener("click",()=>{
+  a.href=mailHref(a.dataset.via);           // always up to date at the moment of the tap
+  const e=emailParts(), h=$("#emailHelp"); h.classList.remove("hidden");
+  h.innerHTML = a.dataset.via==="other"
+    ? `If no email app opened, use the <b>Gmail</b> or <b>Outlook</b> button instead – they work everywhere.`
+    : `The email opens ready to send${e.to?` to <b>${esc(e.to)}</b>`:""} – sign in first if asked.`+(e.to?"":` Add the doctor's email in Settings to fill in the address automatically.`);
+}));
+$("#sumDays").addEventListener("change",refreshMailLinks);
+const canShareFiles=(()=>{ try{ return !!(navigator.canShare && navigator.canShare({files:[new File(["x"],"t.csv",{type:"text/csv"})]})); }catch{ return false; } })();
+if(canShareFiles) $("#shareDoc").classList.remove("hidden");
+$("#shareDoc").onclick=async()=>{
+  const e=emailParts(), f=new File([csv()],`seizure-log-${today()}.csv`,{type:"text/csv"});
+  try{ await navigator.share({title:e.subject, text:`${e.subject}\n\n${summaryText()}`, files:[f]}); }
+  catch(err){ if(err && err.name!=="AbortError") toast("Sharing isn't available here – use Email or Download"); }
+};
+$("#copySummary").onclick=async()=>{
+  const txt=summaryText(), out=$("#summaryOut"); out.value=txt; out.classList.remove("hidden");
+  try{ await navigator.clipboard.writeText(txt); toast("Summary copied"); }catch{ out.select(); toast("Select the text below and copy it"); }
+};
+function csv(){
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const rows=[["Date","Time","Duration (m:ss)","Duration (sec)","Type","Severity (1-5)","What was seen","Actions taken","Triggers","VNS used","VNS swipes","VNS at","Rescue med","Rescue med at","Recovery (min)","Notes","Timeline","Video clips"]];
+  sorted().reverse().forEach(s=>rows.push([fmtDate(s.start),fmtTime(s.start),fmtDur(s.durationSec),s.durationSec,s.type,s.severity||"",(s.signs||[]).join("; "),(s.actions||[]).join("; "),(s.triggers||[]).join("; "),s.vns?"Yes":"No",s.vns?(s.vnsCount||1):"",(s.vnsAtSec||[]).map(fmtDur).join("; "),s.rescueMed?"Yes":"No",s.rescueAtSec!=null?fmtDur(s.rescueAtSec):"",s.recoveryMin??"",s.notes,(s.events||[]).map(e=>fmtDur(e.at)+" "+e.label).join("; "),(s.videos||[]).length]));
+  return rows.map(r=>r.map(q).join(",")).join("\r\n");
+}
+async function saveFile(filename, data, mime){
+  try{ const dl = window.claude && window.claude.use && await window.claude.use("downloads");
+       if(dl){ await dl.save({filename, data}); return true; } }catch(e){ if(e && e.code) return false; }
+  try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([data],{type:mime})); a.download=filename;
+       document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1000); return true; }catch{ return false; }
+}
+const today=()=>new Date().toISOString().slice(0,10);
+$("#dlCsv").onclick=async()=>{
+  if(!(await saveFile(`seizure-log-${today()}.csv`, csv(), "text/csv"))){
+    const out=$("#summaryOut"); out.value=csv(); out.classList.remove("hidden"); out.select();
+    toast("Download not available here – copy the CSV text below");
+  }
+};
+$("#backupBtn").onclick=()=>{ ls.set(LOCAL_BK,Date.now()); renderBackupNag(); return saveFile(`seizure-backup-${today()}.json`, JSON.stringify({app:"seizure-tracker",v:2,settings,seizures},null,1), "application/json"); };
+$("#restoreBtn").onclick=()=>$("#restoreFile").click();
+$("#restoreFile").onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{ const d=JSON.parse(await f.text()); if(!Array.isArray(d.seizures)) throw 0;
+    const have=new Set(seizures.map(s=>s.id)); const add=d.seizures.filter(s=>s&&s.id&&s.start&&!have.has(s.id));
+    confirmSheet("Restore backup?",`Adds ${add.length} entr${add.length==1?"y":"ies"} not already in the log. Nothing is deleted.`,"Restore",async()=>{
+      for(const r of add) await saveSeizure(r); toast(`Restored ${add.length}`); });
+  }catch{ toast("That file isn't a seizure tracker backup"); }
+};
+function setAlarm(m){ settings.alertMin=m; saveSettings(); fillSettings(); if(active) openTimer(); toast(`Alarm set to ${m} minutes`); }
+function pickAlarm(){
+  const am=settings.alertMin||18;
+  showSheet(`<h3>Emergency alarm time</h3><p style="color:var(--muted);margin-top:4px">Use the time from the care plan.</p>
+    <div class="chips">${PRESETS.map(m=>`<button class="chip ${m===am?"on":""}" data-pick="${m}">${m} min</button>`).join("")}</div>
+    <label>Other (minutes)</label><input id="pickN" type="number" min="1" max="60" inputmode="numeric" value="${am}">
+    <div class="dialog-btns"><button class="ghost" id="pkCancel">Cancel</button><button class="primary" id="pkSave">Set</button></div>`);
+  document.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{ hideSheet(); setAlarm(+b.dataset.pick); });
+  $("#pkCancel").onclick=hideSheet;
+  $("#pkSave").onclick=()=>{ const v=Math.min(60,Math.max(1,parseInt($("#pickN").value)||am)); hideSheet(); setAlarm(v); };
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-alarm]"); if(!b) return; if(b.dataset.alarm==="custom") pickAlarm(); else setAlarm(+b.dataset.alarm); });
+
+// ---------- boot ----------
+applyTheme(); iconize(); loadLocal(); fillSettings(); render();
+$("#setTheme").onchange=e=>{ ls.set(LOCAL_THEME,e.target.value); applyTheme(); };
+const savedActive = ls.get(LOCAL_ACTIVE, null);
+if(savedActive && savedActive.start){ active=savedActive; openTimer(); }
+const savedRecov = ls.get(LOCAL_RECOV, null);
+if(!active && savedRecov && savedRecov.id && Date.now()-savedRecov.endAt < 6*3600e3){ recov=savedRecov; openRecovery(); }
+// home-screen shortcut: "Start seizure timer"
+try{ const q=new URLSearchParams(location.search); if(q.get("start")==="1"){ history.replaceState(null,"",location.pathname); if(!active) $("#startBtn").click(); } }catch{}
+renderShareInfo();
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && active){ keepAwake(true); updateClock(); } });
+initDb();
+try{ if("serviceWorker" in navigator && location.protocol==="https:" && !/claude\.ai|claudeusercontent/.test(location.host)) navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch{}
+})();
+</script>
+</body>
+</html>
