@@ -792,6 +792,7 @@ const ls = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse
              set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} },
              del(k){ try{ localStorage.removeItem(k); }catch{} } };
 
+const TYPE_DESC = {"Tonic-clonic":"Tonic-clonic (stiffens, then jerks; unconscious)","Focal (aware)":"Focal, aware (starts in one area; stays aware)","Focal (impaired awareness)":"Focal, impaired awareness (confused or unaware; may fiddle or wander)","Absence":"Absence (brief blank stare, a few seconds)","Myoclonic":"Myoclonic (sudden brief jerks, often arms)","Atonic (drop)":"Atonic (suddenly goes floppy; may drop or fall)","Tonic":"Tonic (body suddenly stiffens)","Unsure / other":"Unsure / other (not sure, or doesn't fit)"};
 const TYPES = ["Tonic-clonic","Focal (aware)","Focal (impaired awareness)","Absence","Myoclonic","Atonic (drop)","Tonic","Unsure / other"];
 const TRIGGERS = ["Tired / poor sleep","Missed medication","Unwell / fever","Stress / excitement","Too hot","Flashing lights","Skipped meal","Hormonal","None obvious"];
 const MARKS = ["Stiffening","Jerking started","Jerking stopped","Staring / unresponsive","Eyes rolled","Fell","Lips blue","Breathing changed","Vomited","Incontinence","Bit tongue","Injured","Recovery position","999 called","Ambulance arrived"];
@@ -1578,7 +1579,7 @@ function openForm(rec, justEnded){
    <label>Duration (minutes : seconds)</label>
    <div class="row"><input type="number" id="fMin" min="0" value="${m}" inputmode="numeric"><input type="number" id="fSec" min="0" max="59" value="${s}" inputmode="numeric"></div>
    <label>Severity</label><div class="sevpick" id="fSev">${[1,2,3,4,5].map(n=>`<button type="button" class="${rec.severity===n?"on":""}" data-sev="${n}">${n}</button>`).join("")}<span class="sevhint">1 mild · 5 severe</span></div>
-   <label>Type</label><select id="fType"><option value="">— choose —</option>${TYPES.map(t=>`<option ${t===rec.type?"selected":""}>${esc(t)}</option>`).join("")}</select>
+   <label>Type</label><select id="fType"><option value="">— choose —</option>${TYPES.map(t=>`<option value="${esc(t)}" ${t===rec.type?"selected":""}>${esc(TYPE_DESC[t]||t)}</option>`).join("")}</select>
    <label>What you saw${justEnded&&(rec.signs||[]).length?` <span style="color:var(--accent);font-weight:600">· filled in from moments you marked</span>`:""}</label>${chipGroup("fSigns",SIGNS,rec.signs||[])}
    <label>Actions taken</label>${chipGroup("fActs",ACTIONS,rec.actions||[])}
    <label>Possible triggers</label>${chipGroup("fTrig",TRIGGERS,rec.triggers||[])}
@@ -2312,7 +2313,7 @@ $("#obEmailBtn").onclick = async () => {
 $("#obStart").onclick = () => { hideOnboarding(); if(!backend) useLocal(); $("#startBtn").click(); };
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.22-35";
+const APP_VERSION="2026.11.22-36";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
