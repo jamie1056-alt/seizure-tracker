@@ -78,7 +78,7 @@ footer img{width:34px;height:34px;border-radius:9px}
   <li><a href="#history">History and patterns</a></li>
   <li><a href="#doctor">Send a report to the doctor</a></li>
   <li><a href="#team">Share with your team</a></li>
-  <li><a href="#privacy">Privacy and security</a></li>
+  <li><a href="#privacy">Privacy and where data is kept</a></li>
   <li><a href="#tips">Tips and troubleshooting</a></li>
   <li><a href="#important">Important information</a></li>
 </ol></nav>
@@ -264,13 +264,24 @@ footer img{width:34px;height:34px;border-radius:9px}
 </section>
 
 <section id="privacy">
-  <h2><span class="n">10</span>Privacy and security</h2>
+  <h2><span class="n">10</span>Privacy, security and where data is kept</h2>
+  <h3>Who hosts what</h3>
+  <table>
+    <tr><th style="width:30%">What</th><th style="width:34%">Who and where</th><th>Notes</th></tr>
+    <tr><td><b>The app itself</b> (its pages, code and pictures)</td><td><b>GitHub Pages</b> (GitHub, owned by Microsoft), served worldwide</td><td>Contains no personal or health information. It's just the program your phone downloads.</td></tr>
+    <tr><td><b>Shared seizure logs</b>, care plan, team members, invites and change history</td><td><b>Google Firebase – Cloud Firestore</b>, in Google's <b>London (europe-west2)</b> data centre, UK</td><td>Only when you sign in. Only people the lead carer has invited can read a child's log – checked by Google's servers, not just the app.</td></tr>
+    <tr><td><b>Sign-in details</b> (name, email address, Google sign-in)</td><td><b>Google Firebase Authentication</b>, on Google's global infrastructure</td><td>May be processed outside the UK, under Google's data-processing terms and UK data-transfer safeguards. Health information is not kept here.</td></tr>
+    <tr><td><b>Phone-only logs</b> and the offline copy</td><td>Your phone only (the browser's storage)</td><td>Never uploaded. Lost if the app is uninstalled or the phone is lost – keep a backup.</td></tr>
+    <tr><td><b>Videos</b></td><td>The phone that recorded them only</td><td>Never uploaded or synced.</td></tr>
+    <tr><td><b>Emailed reports</b></td><td>Your own email account (e.g. Gmail)</td><td>Sent by you, from your email. Use an NHS (nhs.net) address for doctors where possible.</td></tr>
+  </table>
+  <h3>How it's protected</h3>
   <ul class="ticks">
-    <li><b>Phone only:</b> the log never leaves the phone.</li>
-    <li><b>Signed in:</b> the log is stored securely in Google's London data centre, encrypted in transit and at rest.</li>
-    <li>Only people the lead carer has invited can see a child's log – this is enforced on the server, not just in the app.</li>
-    <li><b>Videos are never uploaded</b>; they stay on the phone that recorded them.</li>
-    <li>Signing out removes the shared copy from that phone.</li>
+    <li>Everything sent between the phone and Google is <b>encrypted in transit</b> (HTTPS/TLS) and <b>encrypted at rest</b> by Google.</li>
+    <li>Each person signs in with their <b>own account</b> – no shared passwords. The lead carer can change roles or remove people at any time, and can see a history of changes.</li>
+    <li>Invite links work <b>once</b> and expire after <b>7 days</b>.</li>
+    <li><b>Signing out</b> removes the shared copy from that phone.</li>
+    <li>No advertising, no analytics and no selling of data.</li>
     <li>Use a first name or initials for the child if you prefer.</li>
   </ul>
 </section>
