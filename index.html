@@ -654,6 +654,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
       <div id="shareInfo" style="color:var(--muted);font-size:14px"></div><div id="demoBox"></div>
     </div>
     <a class="btnlink primary" href="guide/" target="_blank" rel="noopener" style="margin:0 0 12px;display:flex"><span class="em">📘</span> Getting started guide</a>
+    <a class="btnlink" id="feedbackBtn" href="mailto:" style="margin:0 0 12px;display:flex;background:var(--panel2);color:var(--text);border:1.5px solid rgba(91,63,216,.35)"><span class="em">💬</span> Send feedback or report a problem</a>
     <div class="note">
       <b>Install on Android:</b> open this page in Chrome, tap the ⋮ menu, then <b>Add to Home screen</b>. It will open full screen like an app.<br><br>
       Keep the timer screen open during a seizure – the alarm sounds from the phone while the page is on screen.
@@ -2289,6 +2290,17 @@ $("#obEmailBtn").onclick = async () => {
   b.disabled = false; b.textContent = "Email me a sign-in link";
 };
 $("#obStart").onclick = () => { hideOnboarding(); if(!backend) useLocal(); $("#startBtn").click(); };
+
+// ---------- feedback ----------
+const APP_VERSION="2026.11.22-34";
+const FEEDBACK_TO="jamie1056@gmail.com";
+function feedbackHref(){
+  const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
+  const mode=(typeof backend!=="undefined"&&backend==="firebase")?`Signed in · ${(typeof ROLE_LABEL!=="undefined"&&ROLE_LABEL[myRole])||"no child yet"}`:"Phone only";
+  const body=`What happened, or what would you change?\n\n\n\nWhat were you doing at the time?\n\n\n\n(Please attach a screenshot if you can.)\n\n— Technical details, no seizure information —\nApp version: ${APP_VERSION}\nPhone: ${phone}\nBrowser: ${/SamsungBrowser/.test(ua)?"Samsung Internet":/CriOS|Chrome/.test(ua)?"Chrome":/Safari/.test(ua)?"Safari":"Other"}${matchMedia("(display-mode: standalone)").matches?" (installed app)":" (browser tab)"}\nScreen: ${screen.width}×${screen.height}\nMode: ${mode}\nSent: ${new Date().toLocaleString("en-GB")}`;
+  return `mailto:${FEEDBACK_TO}?subject=${encodeURIComponent("Seizure Tracker feedback")}&body=${encodeURIComponent(body)}`;
+}
+{ const fb=$("#feedbackBtn"); if(fb){ fb.href=feedbackHref(); fb.addEventListener("click",()=>{ fb.href=feedbackHref(); }); } }
 
 // ---------- disclaimer (shown once, never over a running timer) ----------
 const DISC_KEY="st_disclaimer_v1";
