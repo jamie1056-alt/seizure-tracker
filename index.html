@@ -1624,25 +1624,35 @@ function sumDays(){ const v=parseInt($("#sumDays").value); return isNaN(v)?90:v;
 function periodLabel(d){ return d===0?"all records":d===30?"last 30 days":d===90?"last 3 months":d===182?"last 6 months":d===365?"last 12 months":`last ${d} days`; }
 function summaryText(daysArg){
   const days=daysArg===undefined?sumDays():daysArg, list=(days?within(days):[...seizures]).sort((a,b)=>b.start-a.start);   // newest first
-  const durs=list.map(s=>s.durationSec||0);
-  const L=[];
-  L.push(`Seizure log${settings.name?" – "+settings.name:""}`);
-  L.push(`Period: ${periodLabel(days)} (to ${fmtDate(Date.now())})`);
-  L.push(`Total seizures: ${list.length}`);
+  const durs=list.map(s=>s.durationSec||0), times=n=>n===1?"1 time":n+" times";
+  const longDur=sec=>{ sec=Math.round(sec||0); const m=Math.floor(sec/60), r=sec%60; return m?`${m} min ${r} sec`:`${r} sec`; };
+  const L=[], rule="————————————————";
+  L.push(`SEIZURE LOG${settings.name?" – "+settings.name:""}`);
+  L.push(`${periodLabel(days).replace(/^./,c=>c.toUpperCase())}, to ${fmtDate(Date.now())}`);
+  L.push("", rule, "SUMMARY", rule);
+  L.push(`• Seizures: ${list.length}`);
   if(list.length){
-    L.push(`Average length: ${fmtDur(durs.reduce((a,b)=>a+b,0)/list.length)}   Longest: ${fmtDur(Math.max(...durs))}`);
-    L.push(`VNS magnet used: ${list.filter(s=>s.vns).length} time(s)`);
-    L.push(`Rescue medication given: ${list.filter(s=>s.rescueMed).length} time(s)`);
+    L.push(`• Average length: ${longDur(durs.reduce((a,b)=>a+b,0)/list.length)}`);
+    L.push(`• Longest: ${longDur(Math.max(...durs))}`);
+    L.push(`• VNS magnet used: ${times(list.filter(s=>s.vns).length)}`);
+    L.push(`• Rescue medication given: ${times(list.filter(s=>s.rescueMed).length)}`);
     const tc={}; list.forEach(s=>(s.triggers||[]).forEach(t=>tc[t]=(tc[t]||0)+1));
     const tt=Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${t} (${n})`).join(", ");
-    if(tt) L.push(`Possible triggers noted: ${tt}`);
-    L.push("");
-    list.forEach(s=>{
-      L.push(`${fmtDate(s.start)} ${fmtTime(s.start)} – ${fmtDur(s.durationSec)}${s.type?" – "+s.type:""}${s.severity?` – severity ${s.severity}/5`:""}${s.vns?" – VNS"+(s.vnsCount>1?" ×"+s.vnsCount:"")+((s.vnsAtSec||[]).length?" at "+s.vnsAtSec.map(fmtDur).join(", "):""):""}${s.rescueMed?" – rescue med"+(s.rescueAtSec!=null?" at "+fmtDur(s.rescueAtSec):""):""}${s.recoveryMin!=null?" – recovery "+s.recoveryMin+" min":""}`);
-      if((s.signs||[]).length) L.push(`   Seen: ${s.signs.join(", ")}`);
-      if((s.actions||[]).length) L.push(`   Actions: ${s.actions.join(", ")}`);
-      if(s.notes) L.push(`   Notes: ${s.notes}`);
-      if((s.videos||[]).length) L.push(`   Video recorded: ${s.videos.length} clip(s)`);
+    if(tt) L.push(`• Possible triggers: ${tt}`);
+    L.push("", rule, "EACH SEIZURE (newest first)", "Times in brackets are from the start of the seizure.", rule);
+    list.forEach((s,i)=>{
+      L.push("", `${i+1}.  ${fmtDate(s.start)} at ${fmtTime(s.start)}`);
+      L.push(`• Length: ${longDur(s.durationSec)}`);
+      if(s.type) L.push(`• Type: ${s.type}`);
+      if(s.severity) L.push(`• Severity: ${s.severity} out of 5`);
+      if(s.vns){ const n=s.vnsCount||1, at=(s.vnsAtSec||[]).map(fmtDur).join(", "); L.push(`• VNS magnet: ${n===1?"1 swipe":n+" swipes"}${at?" ("+at+")":""}`); }
+      if(s.rescueMed) L.push(`• Rescue medication: given${s.rescueAtSec!=null?" ("+fmtDur(s.rescueAtSec)+")":""}`);
+      if((s.signs||[]).length) L.push(`• Seen: ${s.signs.join(", ")}`);
+      if((s.triggers||[]).length) L.push(`• Possible triggers: ${s.triggers.join(", ")}`);
+      if((s.actions||[]).length) L.push(`• Actions: ${s.actions.join(", ")}`);
+      if(s.recoveryMin) L.push(`• Recovery: ${s.recoveryMin} min`);
+      if(s.notes) L.push(`• Notes: ${s.notes}`);
+      if((s.videos||[]).length) L.push(`• Video: ${s.videos.length===1?"1 clip":s.videos.length+" clips"} on the phone – available on request`);
     });
   }
   return L.join("\n");
@@ -1650,12 +1660,12 @@ function summaryText(daysArg){
 function emailParts(){
   const who=settings.name||"my child", days=sumDays();
   const subject=`Seizure log – ${settings.name||"child"} – ${periodLabel(days)}`;
-  let body=`Hello,\n\nPlease find below the seizure log for ${who} (${periodLabel(days)}).\n\n${summaryText(days)}\n\nKind regards`;
+  let body=`Hello,\n\nPlease find below the seizure log for ${who} (${periodLabel(days)}).\n\n${summaryText(days)}\n`;
   return {to:settings.docEmail||"", subject, body};
 }
 function fitBody(body, max){
   if(body.length<=max) return body;
-  return body.slice(0,max).replace(/\n[^\n]*$/,"")+`\n\n[Log shortened to fit – download the spreadsheet for the full record.]\n\nKind regards`;
+  return body.slice(0,max).replace(/\n[^\n]*$/,"")+`\n\n[Log shortened to fit – download the spreadsheet for the full record.]\n`;
 }
 function mailHref(via){
   const e=emailParts(), enc=encodeURIComponent;
@@ -2087,6 +2097,7 @@ function renderPeople(el){
     ${order.map(uid => `<div class="person"><div><b style="color:var(--text)">${esc(names[uid] || "Someone")}${uid===me?" (you)":""}</b><small>${esc(ROLE_LABEL[roles[uid]] || roles[uid])} – ${esc(ROLE_HELP[roles[uid]] || "")}</small></div>
       ${owner && uid !== me ? `<div class="pact"><select data-role="${esc(uid)}">${ROLES.map(r => `<option value="${r}" ${roles[uid]===r?"selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select><button class="danger" data-rm="${esc(uid)}" aria-label="Remove">✕</button></div>` : ""}</div>`).join("")}
     ${owner ? `<div style="margin-top:14px;font-weight:700;color:var(--text)">Invite someone</div>
+      <div style="color:var(--muted);font-size:14px;margin-top:4px">Choose what the person you're inviting can do:</div>
       <div class="row" style="margin-top:8px"><select id="invRole"><option value="carer">Carer – log and edit</option><option value="logger">Logger – log only (e.g. school)</option><option value="viewer">Viewer – read only (e.g. nurse)</option><option value="owner">Lead carer – e.g. other parent</option></select></div>
       <button class="primary" id="invGo" style="width:100%;margin-top:8px">${lastInvite && lastInvite.cid===curChild.id ? "Create another invite link" : "Create invite link"}</button><div id="invOut"></div>
       <button id="auditBtn" style="width:100%;margin-top:10px">View change history</button>`
