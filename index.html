@@ -980,7 +980,7 @@ document.querySelectorAll(".tile[data-go]").forEach(t=>t.onclick=()=>{
   else if(g==="logpast"){ $("#addPastBtn").click(); }
 });
 function render(){
-  $("#title").textContent = settings.name ? `${settings.name}'s seizures` : "Seizure Tracker";
+  $("#title").textContent = settings.name ? `${settings.name} Seizure Log` : "Seizure Tracker";
   const w7=within(7), w30=within(30), all=sorted();
   $("#s30").textContent=w30.length;
   const st=streaks(); $("#sFree").textContent = st.current==null ? "–" : st.current; $("#sBest").textContent = st.best==null ? "–" : st.best;
@@ -2020,7 +2020,7 @@ function subscribeSeizures(cid){
     seizures = snap.docs.map(d => fromFs(d.id, d.data()));
     ls.set(LOCAL_KEY, seizures);
     const st = $("#syncState");
-    if(!snap.metadata.fromCache && !snap.metadata.hasPendingWrites){ st.textContent = `Synced · you're ${ROLE_LABEL[myRole] ? "a"+(myRole==="owner"?"n ":" ")+ROLE_LABEL[myRole].toLowerCase() : "signed in"}`; st.classList.add("ok"); }
+    if(!snap.metadata.fromCache && !snap.metadata.hasPendingWrites){ st.textContent = `Synced · you're ${ROLE_LABEL[myRole] ? "a "+ROLE_LABEL[myRole].toLowerCase() : "signed in"}`; st.classList.add("ok"); }
     else { st.textContent = navigator.onLine ? "Syncing…" : "Offline – saved on this phone, will sync"; st.classList.remove("ok"); }
     render(); renderShareInfo();
   }, err => { console.warn(err); $("#syncState").textContent = "Sync stopped (" + (err.code || "error") + ")"; });
