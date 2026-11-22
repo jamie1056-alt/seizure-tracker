@@ -488,9 +488,10 @@ html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21
 .big-start.viewonly{filter:grayscale(1);opacity:.5}
 html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(21,32,58,.05),0 6px 20px rgba(21,32,58,.06)}
 #title .tsub{display:block;font-size:.62em;font-weight:600;color:var(--muted);letter-spacing:.01em;margin-top:1px}
-.disc{margin:6px 0 4px;padding-left:20px;font-size:14px;line-height:1.45}.disc li{margin-bottom:7px}
+.disc{margin:6px 0 4px;padding-left:20px;font-size:14px;line-height:1.45}.disc li{margin-bottom:9px}.disc li>b:first-child{display:block;margin-bottom:1px}
 .discbox{background:#fff1f1;border:2px solid #e5484d;color:#1b2140;border-radius:14px;padding:12px 14px;margin:6px 0 12px}
 .discbox b.t{display:block;color:#c0282e;font-size:15px;margin-bottom:4px}
+.row.fields{align-items:flex-end}.row.fields label{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -626,11 +627,11 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
       <button id="addStep" class="ghost" style="width:100%;border:1px dashed var(--line2);background:transparent"><span class="em">➕</span> Add a step</button>
       <div style="margin-top:20px;font-weight:700">VNS swipes</div>
       <div class="subhead">After the first swipe, a separate VNS timer counts down and sounds an alarm when the next swipe is due.</div>
-      <div class="row"><div><label for="setVnsGap" style="margin-top:0">Time between swipes (seconds)</label><input id="setVnsGap" type="number" min="10" max="600" step="5" inputmode="numeric"></div>
+      <div class="row fields"><div><label for="setVnsGap" style="margin-top:0">Seconds between swipes</label><input id="setVnsGap" type="number" min="10" max="600" step="5" inputmode="numeric"></div>
         <div><label for="setVnsMax" style="margin-top:0">Maximum swipes</label><input id="setVnsMax" type="number" min="1" max="10" inputmode="numeric"></div></div>
       <div style="margin-top:20px;font-weight:700">Clusters</div>
       <div class="subhead">Warn when this many seizures happen within the time below. Set 0 to turn off.</div>
-      <div class="row"><div><label for="setClN" style="margin-top:0">Seizures</label><input id="setClN" type="number" min="0" max="20" inputmode="numeric"></div>
+      <div class="row fields"><div><label for="setClN" style="margin-top:0">Seizures</label><input id="setClN" type="number" min="0" max="20" inputmode="numeric"></div>
         <div><label for="setClH" style="margin-top:0">Within (hours)</label><input id="setClH" type="number" min="1" max="72" inputmode="numeric"></div></div>
       <div style="margin-top:20px;font-weight:700">Recovery</div>
       <label for="setRecChk">Remind me to check breathing every (minutes)</label>
@@ -674,8 +675,8 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
     <div class="card" style="--acc:#e5484d" id="aboutCard">
       <h2>Important information</h2>
       <ul class="disc"><li><b>Not a medical device.</b> Seizure Tracker is a record-keeping and reminder tool. It has not been assessed, registered or approved by the MHRA or any other regulator.</li>
-<li><b>It does not detect, monitor, diagnose or predict seizures</b>, and it does not give medical advice.</li>
-<li><b>Always follow the child's care plan</b> and the advice of their doctors and nurses. If anything in the app differs from the care plan, the care plan wins.</li>
+<li><b>It does not detect, monitor, diagnose or predict seizures.</b> It does not give medical advice either.</li>
+<li><b>Always follow the child's care plan.</b> Follow the advice of their doctors and nurses too. If anything in the app differs from the care plan, the care plan wins.</li>
 <li><b>In an emergency, call 999.</b> Never wait for the app.</li>
 <li><b>Don't rely on it alone.</b> Timers, alarms and reminders depend on the phone – battery, volume, silent mode, the screen being on and signal – and may not sound.</li>
 <li><b>Records are made by family and carers.</b> They may be incomplete or inaccurate and are not a clinical record. Check them before sharing.</li></ul>
@@ -2293,8 +2294,8 @@ $("#obStart").onclick = () => { hideOnboarding(); if(!backend) useLocal(); $("#s
 const DISC_KEY="st_disclaimer_v1";
 function showDisclaimer(){
   showSheet(`<h3>Before you start – important</h3><div class="discbox"><b class="t">Seizure Tracker is not a medical device</b><ul class="disc" style="margin:0">${`<li><b>Not a medical device.</b> Seizure Tracker is a record-keeping and reminder tool. It has not been assessed, registered or approved by the MHRA or any other regulator.</li>
-<li><b>It does not detect, monitor, diagnose or predict seizures</b>, and it does not give medical advice.</li>
-<li><b>Always follow the child's care plan</b> and the advice of their doctors and nurses. If anything in the app differs from the care plan, the care plan wins.</li>
+<li><b>It does not detect, monitor, diagnose or predict seizures.</b> It does not give medical advice either.</li>
+<li><b>Always follow the child's care plan.</b> Follow the advice of their doctors and nurses too. If anything in the app differs from the care plan, the care plan wins.</li>
 <li><b>In an emergency, call 999.</b> Never wait for the app.</li>
 <li><b>Don't rely on it alone.</b> Timers, alarms and reminders depend on the phone – battery, volume, silent mode, the screen being on and signal – and may not sound.</li>
 <li><b>Records are made by family and carers.</b> They may be incomplete or inaccurate and are not a clinical record. Check them before sharing.</li>`}</ul></div>
