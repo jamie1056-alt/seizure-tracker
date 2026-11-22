@@ -464,6 +464,28 @@ html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21
 .big-start small{font-size:15px!important;margin-top:5px!important}
 #fabStart{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:8px;padding:14px 18px;border-radius:999px;background:var(--red);color:#fff;font-weight:800;font-size:16px;box-shadow:0 8px 24px rgba(229,72,77,.45)}
 #fabStart svg.i{width:22px;height:22px}
+
+/* onboarding, people, child switch */
+#onboard{position:fixed;inset:0;z-index:65;background:var(--bg);overflow-y:auto;padding:calc(20px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom))}
+.obwrap{max-width:460px;margin:0 auto;text-align:center}
+.obl{width:64px!important;height:64px!important;border-radius:18px!important;margin:10px auto 8px}
+.obl svg.i{width:34px!important;height:34px!important}
+#onboard h2{margin:6px 0 4px;font-size:24px}
+.obintro{color:var(--muted);margin:0 0 16px}
+.obcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;margin:12px 0;text-align:left;display:grid;gap:8px}
+.obcard b{font-size:17px}.obcard small{color:var(--muted);font-size:13.5px;margin-top:-4px}
+.obcard button{width:100%;padding:13px;font-weight:700}
+#obEmailForm{display:grid;gap:8px}
+.obsos{width:100%;margin-top:6px;background:var(--red)!important;color:#fff;font-weight:800;padding:14px;display:flex;justify-content:center;align-items:center;gap:8px}
+.fine{color:var(--faint);font-size:12px;margin-top:14px}
+#childSwitch{margin-top:4px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700;background:var(--panel2);border:1px solid var(--line2);color:var(--text)}
+.person{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.person small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.pact{display:flex;gap:6px;align-items:center;flex:none}
+.pact select{width:auto;padding:8px}
+.pact button{padding:8px 11px}
+.big-start.viewonly{filter:grayscale(1);opacity:.5}
+html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(21,32,58,.05),0 6px 20px rgba(21,32,58,.06)}
 </style>
 </head>
 <body>
@@ -471,6 +493,7 @@ html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21
   <header>
     <div class="brand"><div class="logo"><span class="em">⏱</span></div>
       <div style="min-width:0"><h1 id="title">Seizure Tracker</h1>
+      <button id="childSwitch" class="hidden"></button>
       <div class="sub" id="syncState">Loading…</div></div>
     </div>
     <button class="ghost" id="addPastBtn" style="white-space:nowrap;flex:none"><span class="em">➕</span> Log past</button>
@@ -614,7 +637,11 @@ html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21
       <div class="row"><button id="passView">View</button><button class="primary" id="passDl"><span class="em">⬇</span> Download to print</button></div>
     </div>
     <div class="card">
-      <h2>Sharing with carers</h2>
+      <h2>Account</h2>
+      <div id="accountInfo"></div>
+    </div>
+    <div class="card">
+      <h2>People</h2>
       <div id="shareInfo" style="color:var(--muted);font-size:14px"></div><div id="demoBox"></div>
     </div>
     <div class="note">
@@ -693,6 +720,27 @@ html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21
     <div class="row"><button id="rPos"><span class="em">🛌</span> Recovery position</button><button id="rSkip">Add details now</button></div>
   </div>
 </div>
+<div id="onboard" class="hidden">
+  <div class="obwrap">
+    <div class="logo obl"><span class="em">⏱</span></div>
+    <h2>Seizure Tracker</h2>
+    <p id="obIntro" class="obintro"></p>
+    <div class="obcard" id="obLocal">
+      <b>Use on this phone only</b>
+      <small>No account. Nothing leaves this phone. You can sign in later to share.</small>
+      <button id="obLocalBtn">Use on this phone</button>
+    </div>
+    <div class="obcard">
+      <b>Sign in to back up and share</b>
+      <small>One shared log for family, carers and school. Stored securely in London.</small>
+      <button class="primary" id="obGoogle">Continue with Google</button>
+      <div id="obEmailForm"><input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="Or your email address"><button id="obEmailBtn">Email me a sign-in link</button></div>
+      <div id="obEmailSent" class="note hidden">Check your email <b>on this phone</b> and tap the link to finish signing in.</div>
+    </div>
+    <button class="obsos" id="obStart"><span class="em">⏱</span> Seizure happening now? Start the timer</button>
+    <p class="fine">A record-keeping tool that follows the child's care plan. It isn't medical advice.</p>
+  </div>
+</div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
 
@@ -750,7 +798,7 @@ let userNs=null, canWrite=true, db=null, me=null, colRef=null, settingsRef=null,
 let active = null;          // {start, events:[], rescueAtSec, muted, alarmed}
 
 // ---------- storage ----------
-const LOCAL_KEY="st_seizures_v1", LOCAL_SET="st_settings_v1", LOCAL_ACTIVE="st_active_v1";
+let LOCAL_KEY="st_seizures_v1", LOCAL_SET="st_settings_v1"; const LOCAL_ACTIVE="st_active_v1";
 function migrate(){ // one-off: older saved settings used a 5-minute default
   let changed=false;
   if(!settings.cfgV){ if(!settings.alertMin||settings.alertMin===5) settings.alertMin=18; settings.cfgV=2; changed=true; }
@@ -778,6 +826,7 @@ async function saveSettings(){
 }
 function handleDbErr(e, what){
   console.warn("db",what,e);
+  if(backend==="firebase"){ const c=(e&&e.code)||""; toast(/permission/.test(c) ? "You don't have permission to change that" : /unavailable|timeout|network/.test(c) ? "No signal – saved on this phone, it will sync later" : "Couldn't save to your account ("+(c||"error")+")"); return; }
   if(e && e.code==="invalid_argument"){ canWrite=false; const b=$("#roBanner"); b.textContent="You can view this log but not add to it. Ask the person who shared it to make you an Editor."; b.classList.remove("hidden"); toast("View-only – not saved to the shared log"); return; }
   if(e && e.code==="quota_exceeded") toast("Storage full – export your data, then delete old entries");
   else toast("Saved on this phone; couldn't sync to your account just now");
@@ -845,6 +894,8 @@ function fillWho(){
 }
 function renderShareInfo(){
   const el=$("#shareInfo"); if(!el) return;
+  if(backend==="firebase"){ $("#demoBox").innerHTML=""; renderPeople(el); return; }
+  if(backend==="local"){ $("#demoBox").innerHTML=""; el.innerHTML=`Sharing needs an account. Use <b style="color:var(--text)">Account → Sign in to back up and share</b> above, then invite family, carers or school from here.`; return; }
   setTimeout(()=>{ const n=seizures.filter(x=>x.demo).length, box=$("#demoBox");
     if(box) box.innerHTML = n ? `<div class="note" style="margin-top:12px">There ${n==1?"is 1 demo entry":`are ${n} demo entries`} in the log, made to show how sharing looks.<div style="margin-top:8px"><button class="danger" id="rmDemo">Remove demo entries</button></div></div>` : "";
     const b=$("#rmDemo"); if(b) b.onclick=()=>confirmSheet("Remove demo entries?",`Deletes the ${n} made-up entries from Sam and School Nurse. Real entries are not touched.`,"Remove",async()=>{ for(const x of seizures.filter(y=>y.demo)) await deleteSeizure(x.id); toast("Demo entries removed"); renderShareInfo(); });
@@ -865,7 +916,7 @@ function itemHTML(s,inDay){
   const vk=(s.videos||[]).length?s.videos[0].key:"";
   return `<div class="list-item" data-id="${esc(s.id)}" style="--tc:${typeCol(s.type)}">
     ${vk?`<div class="thumb" data-vk="${esc(vk)}"></div>`:`<i class="tbar"></i>`}
-    <div style="flex:1;min-width:0"><div class="t">${inDay?esc(fmtTime(s.start)):esc(fmtDate(s.start))+" · "+esc(fmtTime(s.start))}${s.type?` <span class="tname">${esc(s.type)}</span>`:""} ${sev}</div><div class="m">${pills}<span>${esc(bits||(pills?"":"Tap to add details"))}</span>${s.byName?`<span class="who">· ${esc(s.byName.split(" ")[0])}</span>`:(mode==="cloud"&&s.by)?`<span class="who" data-by="${esc(s.by)}"></span>`:""}${s.demo?`<span class="pill" style="font-size:11px">Demo</span>`:""}</div></div>
+    <div style="flex:1;min-width:0"><div class="t">${inDay?esc(fmtTime(s.start)):esc(fmtDate(s.start))+" · "+esc(fmtTime(s.start))}${s.type?` <span class="tname">${esc(s.type)}</span>`:""} ${sev}</div><div class="m">${pills}<span>${esc(bits||(pills?"":"Tap to add details"))}</span>${s.byName?`<span class="who">· ${s.by&&s.by===me?"You":esc(s.byName.split(" ")[0])}</span>`:(mode==="cloud"&&s.by)?`<span class="who" data-by="${esc(s.by)}"></span>`:""}${s.demo?`<span class="pill" style="font-size:11px">Demo</span>`:""}</div></div>
     <div class="dur ${s.durationSec>=alarmSec?"long":""}">${fmtDur(s.durationSec)}</div></div>`;
 }
 const DAY=86400e3;
@@ -1523,6 +1574,8 @@ function openForm(rec, justEnded){
    <div class="dialog-btns">${isNew?`<button class="ghost" id="fCancel">Cancel</button>`:`<button class="danger" id="fDel">Delete</button>`}<button class="primary" id="fSave">Save</button></div>`);
   document.querySelectorAll("#fSigns .chip, #fActs .chip, #fTrig .chip").forEach(c=>c.onclick=()=>c.classList.toggle("on"));
   if($("#fCancel")) $("#fCancel").onclick=hideSheet;
+  if(!canEditRec(rec)){ document.querySelectorAll("#sheet input,#sheet select,#sheet textarea,#fSev button,#fSigns .chip,#fActs .chip,#fTrig .chip").forEach(x=>x.disabled=true); const sv=$("#fSave"); if(sv) sv.classList.add("hidden"); const n=document.createElement("div"); n.className="note"; n.textContent= myRole==="logger" ? "You can only edit seizures you logged, within 24 hours." : "You have view-only access."; $("#sheet").insertBefore(n,$("#sheet").children[1]); }
+  if(backend==="firebase" && !["owner","carer"].includes(myRole)){ const d=$("#fDel"); if(d) d.classList.add("hidden"); }
   document.querySelectorAll("#fSev button").forEach(b=>b.onclick=()=>{ const was=b.classList.contains("on"); document.querySelectorAll("#fSev button").forEach(x=>x.classList.remove("on")); if(!was) b.classList.add("on"); });
   if(rec.byName){ const el=$("#fBy"); if(el) el.textContent="Logged by "+rec.byName+(rec.demo?" (demo entry)":""); }
   else if(rec.by && userNs && userNs.profiles){ userNs.profiles([rec.by]).then(ps=>{ const n=(ps&&ps[rec.by]&&ps[rec.by].name)||""; const el=$("#fBy"); if(el && n) el.textContent="Logged by "+n+(rec.clusterNo>1?` · ${ordinal(rec.clusterNo)} in ${settings.clusterH||24}h`:""); }).catch(()=>{}); }
@@ -1681,6 +1734,408 @@ function pickAlarm(){
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-alarm]"); if(!b) return; if(b.dataset.alarm==="custom") pickAlarm(); else setAlarm(+b.dataset.alarm); });
 
+// =====================================================================
+// Firebase backend (used when the app runs from its own web address)
+// =====================================================================
+const ON_CLAUDE = /(^|\.)claude\.ai$|claudeusercontent|anthropic/.test(location.hostname) || !!(window.claude && window.claude.use);
+const FB_VER = "10.12.2";
+const FB_CONFIG = {
+  apiKey: "AIzaSyAF2EAobtb_f2kd3eo4oWQLptEOwT-rCt8",
+  authDomain: "seizure-tracker-67312.firebaseapp.com",
+  projectId: "seizure-tracker-67312",
+  storageBucket: "seizure-tracker-67312.firebasestorage.app",
+  messagingSenderId: "1019776849464",
+  appId: "1:1019776849464:web:77a5f4f7f3d02a354d78cd"
+};
+const ROLES = ["owner","carer","logger","viewer"];
+const ROLE_LABEL = {owner:"Owner", carer:"Carer", logger:"Logger", viewer:"Viewer"};
+const ROLE_HELP = {owner:"everything, including the care plan and people", carer:"log seizures and edit entries", logger:"log seizures, and edit their own for 24 hours", viewer:"read only"};
+const LOCAL_MODE="st_mode_v1", LOCAL_CHILD="st_child_v1", LOCAL_JOIN="st_join_v1", LOCAL_EMAIL="st_email_v1";
+let backend = ON_CLAUDE ? "claude" : null;          // "claude" | "local" | "firebase"
+let F=null, fbAuth=null, fdb=null, fbUser=null, myName="", myChildren=[], curChild=null, myRole=null;
+let unsubSeiz=null, unsubKids=null, serverIds=new Set();
+
+function withTimeout(p, ms, msg){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej({code:"timeout", message:msg||"timeout"}), ms))]); }
+function cleanForFs(o){ return JSON.parse(JSON.stringify(o, (k,v)=> v===undefined ? null : v)); }
+function stripLocal(r){ const o=cleanRec(r); delete o.updatedAt; delete o.createdAt; delete o.updatedBy; return cleanForFs(o); }
+
+async function loadFirebase(){
+  if(F) return F;
+  if(window.__FAKE_FB__){ F = window.__FAKE_FB__; }
+  else {
+    const base = `https://www.gstatic.com/firebasejs/${FB_VER}/`;
+    const [a, au, fs] = await Promise.all([import(base+"firebase-app.js"), import(base+"firebase-auth.js"), import(base+"firebase-firestore.js")]);
+    F = {...a, ...au, ...fs};
+  }
+  const app = F.initializeApp(FB_CONFIG);
+  fbAuth = F.getAuth(app);
+  try{ fdb = F.initializeFirestore(app, {localCache: F.persistentLocalCache({tabManager: F.persistentMultipleTabManager()})}); }
+  catch(e){ fdb = F.getFirestore(app); }
+  return F;
+}
+
+// ---------- sign-in ----------
+async function signInGoogle(){
+  try{
+    await loadFirebase();
+    const p = new F.GoogleAuthProvider(); p.setCustomParameters && p.setCustomParameters({prompt:"select_account"});
+    try{ await F.signInWithPopup(fbAuth, p); }
+    catch(e){
+      const c = (e && e.code) || "";
+      if(/closed-by-user|cancelled-popup/.test(c)) return;
+      if(/popup-blocked|operation-not-supported|web-storage/.test(c)) return F.signInWithRedirect(fbAuth, p);
+      throw e;
+    }
+  }catch(e){ console.warn(e); toast("Google sign-in didn't work – try the email link instead"); }
+}
+async function sendEmailLink(email){
+  await loadFirebase();
+  await F.sendSignInLinkToEmail(fbAuth, email, {url: location.origin + location.pathname, handleCodeInApp: true});
+  ls.set(LOCAL_EMAIL, email);
+}
+async function completeEmailLink(){
+  try{ if(!F.isSignInWithEmailLink(fbAuth, location.href)) return; }catch{ return; }
+  let email = ls.get(LOCAL_EMAIL, null);
+  if(!email) email = await askText("Confirm your email", "Type the email address the sign-in link was sent to.", "email");
+  if(!email) return;
+  try{ await F.signInWithEmailLink(fbAuth, email, location.href); ls.del(LOCAL_EMAIL); }
+  catch(e){ console.warn(e); toast("That sign-in link has expired or was already used – send a new one"); }
+  try{ history.replaceState(null, "", location.pathname); }catch{}
+}
+
+// ---------- start-up ----------
+async function initStandalone(){
+  try{
+    const q = new URLSearchParams(location.search), j = q.get("join");
+    if(j){ ls.set(LOCAL_JOIN, j); q.delete("join"); history.replaceState(null, "", location.pathname + (q.toString() ? "?"+q : "")); }
+  }catch{}
+  const chosen = ls.get(LOCAL_MODE, null);
+  const returningFromEmail = /[?&](oobCode|apiKey)=/.test(location.search);
+  if(chosen === "firebase" || returningFromEmail || ls.get(LOCAL_JOIN, null)) return startFirebase();
+  if(chosen === "local" || seizures.length){ useLocal(); return; }
+  showOnboarding();
+}
+function useLocal(){
+  backend = "local"; mode = "local"; ls.set(LOCAL_MODE, "local");
+  const st = $("#syncState"); st.textContent = "Saved on this phone only"; st.classList.remove("ok");
+  applyRoleUI(); renderAccount(); renderShareInfo(); renderChildSwitch();
+}
+async function startFirebase(){
+  backend = "firebase"; mode = "cloud"; ls.set(LOCAL_MODE, "firebase");
+  $("#syncState").textContent = "Connecting…";
+  try{ await loadFirebase(); }
+  catch(e){ console.warn(e); $("#syncState").textContent = "Can't reach the sign-in service – check your signal"; showOnboarding(true); return; }
+  try{ await F.getRedirectResult(fbAuth); }catch{}
+  await completeEmailLink();
+  F.onAuthStateChanged(fbAuth, u => { onAuth(u); });
+}
+let authBusy = false;
+async function onAuth(u){
+  if(u && fbUser && fbUser.uid === u.uid && (authBusy || me === u.uid)) return;   // same person reported twice
+  fbUser = u;
+  if(!u){ me = null; stopWatching(); renderAccount(); showOnboarding(true); return; }
+  me = u.uid; hideOnboarding(); authBusy = true;
+  let name = u.displayName || "";
+  try{ const ud = await withTimeout(F.getDoc(F.doc(fdb, "users", u.uid)), 6000); if(ud.exists() && ud.data().name) name = ud.data().name; }catch{}
+  if(!name){
+    name = await askText("Your name", "This is how other carers will see you in the log.", "text");
+    name = (name || "").trim() || (u.email || "Carer").split("@")[0];
+    try{ await F.updateProfile(u, {displayName: name}); }catch{}
+  }
+  myName = name;
+  F.setDoc(F.doc(fdb, "users", u.uid), {name, email: u.email || ""}, {merge: true}).catch(()=>{});
+  await acceptPendingJoin();
+  authBusy = false;
+  watchChildren();
+}
+function stopWatching(){ if(unsubKids){ unsubKids(); unsubKids = null; } if(unsubSeiz){ unsubSeiz(); unsubSeiz = null; } curChild = null; myChildren = []; myRole = null; }
+
+// ---------- children ----------
+function watchChildren(){
+  if(unsubKids) unsubKids();
+  const q = F.query(F.collection(fdb, "children"), F.where(`roles.${me}`, "in", ROLES));
+  unsubKids = F.onSnapshot(q, snap => {
+    myChildren = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.name||"").localeCompare(b.name||""));
+    if(!myChildren.length){ if(unsubSeiz){ unsubSeiz(); unsubSeiz = null; } curChild = null; myRole = null; renderAccount(); renderChildSwitch(); if(!ls.get(LOCAL_JOIN,null)) showChildSetup(); return; }
+    const want = ls.get(LOCAL_CHILD, null);
+    const pick = myChildren.find(c => curChild && c.id === curChild.id) || myChildren.find(c => c.id === want) || myChildren[0];
+    applyChild(pick);
+  }, err => { console.warn(err); $("#syncState").textContent = "Couldn't load your children (" + (err.code || "error") + ")"; });
+}
+function applyChild(c){
+  const changed = !curChild || curChild.id !== c.id;
+  const settingsChanged = !curChild || JSON.stringify(curChild.settings || null) !== JSON.stringify(c.settings || null) || curChild.name !== c.name;
+  curChild = c; myRole = (c.roles || {})[me] || null; ls.set(LOCAL_CHILD, c.id);
+  canWrite = ["owner","carer","logger"].includes(myRole);
+  settings = Object.assign({...DEFAULTS}, c.settings || {}, {name: c.name || "", cfgV: 3});
+  LOCAL_KEY = "st_cloud_" + c.id; LOCAL_SET = "st_cloudset_" + c.id; ls.set(LOCAL_SET, settings);
+  colRef = seizureCol(c.id); settingsRef = childSettingsRef(c.id); activeRef = null;
+  if(changed){ seizures = ls.get(LOCAL_KEY, []); subscribeSeizures(c.id); }
+  if(settingsChanged){ const ae = document.activeElement; if(!ae || !$("#view-settings").contains(ae)) fillSettings(); }
+  applyRoleUI(); renderChildSwitch(); renderAccount(); renderShareInfo(); render();
+}
+function subscribeSeizures(cid){
+  if(unsubSeiz) unsubSeiz();
+  serverIds = new Set();
+  unsubSeiz = F.onSnapshot(F.collection(fdb, "children", cid, "seizures"), {includeMetadataChanges: true}, snap => {
+    if(!curChild || curChild.id !== cid) return;
+    serverIds = new Set(snap.docs.map(d => d.id));
+    seizures = snap.docs.map(d => fromFs(d.id, d.data()));
+    ls.set(LOCAL_KEY, seizures);
+    const st = $("#syncState");
+    if(!snap.metadata.fromCache && !snap.metadata.hasPendingWrites){ st.textContent = `Synced · you're ${ROLE_LABEL[myRole] ? "a"+(myRole==="owner"?"n ":" ")+ROLE_LABEL[myRole].toLowerCase() : "signed in"}`; st.classList.add("ok"); }
+    else { st.textContent = navigator.onLine ? "Syncing…" : "Offline – saved on this phone, will sync"; st.classList.remove("ok"); }
+    render(); renderShareInfo();
+  }, err => { console.warn(err); $("#syncState").textContent = "Sync stopped (" + (err.code || "error") + ")"; });
+}
+function fromFs(id, d){ const o = {...d, id}; for(const k of ["updatedAt","createdAt"]) if(o[k] && o[k].toMillis) o[k] = o[k].toMillis(); return o; }
+function audit(cid, action, sid, extra){
+  F.addDoc(F.collection(fdb, "children", cid, "audit"), Object.assign({action, sid: sid || null, by: me, byName: myName, at: F.serverTimestamp()}, extra || {})).catch(()=>{});
+}
+// Same interface the rest of the app already uses (colRef.doc(id).set / delete)
+function seizureCol(cid){
+  return {
+    doc: id => ({
+      set: async rec => {
+        const ref = F.doc(fdb, "children", cid, "seizures", id);
+        const isNew = !serverIds.has(id);
+        const data = stripLocal(rec); delete data.by; delete data.byName;
+        data.updatedBy = me; data.updatedAt = F.serverTimestamp();
+        let p;
+        if(!isNew) p = F.setDoc(ref, data, {merge: true});
+        else { data.by = me; data.byName = myName; data.createdAt = F.serverTimestamp(); serverIds.add(id); p = F.setDoc(ref, data); }
+        audit(cid, isNew ? "logged a seizure" : "edited a seizure", id, {start: rec.start || null});
+        p.catch(e => handleDbErr(e, "save"));
+      },
+      delete: async () => { F.deleteDoc(F.doc(fdb, "children", cid, "seizures", id)).catch(e => handleDbErr(e, "delete")); audit(cid, "deleted", id); }
+    })
+  };
+}
+function childSettingsRef(cid){
+  return {
+    set: async s => {
+      if(myRole !== "owner"){ toast("Only the child's owner can change these settings"); return; }
+      const {name, ...rest} = s;
+      F.updateDoc(F.doc(fdb, "children", cid), {settings: cleanForFs(rest), name: (name || "").trim() || (curChild && curChild.name) || "Child"}).catch(e => handleDbErr(e, "settings"));
+      audit(cid, "care plan changed");
+    }
+  };
+}
+async function createChild(name, age, copyLocal){
+  const ref = F.doc(F.collection(fdb, "children"));
+  const base = copyLocal ? ls.get("st_settings_v1", {}) : {};
+  const s = Object.assign({...DEFAULTS}, base, {age: age || base.age || ""}); delete s.name;
+  ls.set(LOCAL_CHILD, ref.id);
+  F.setDoc(ref, {name: name.trim(), createdBy: me, createdAt: F.serverTimestamp(), roles: {[me]: "owner"}, memberNames: {[me]: myName}, settings: cleanForFs(s)}).catch(e => handleDbErr(e, "child"));
+  if(copyLocal){
+    const local = ls.get("st_seizures_v1", []);
+    local.forEach(r => F.setDoc(F.doc(fdb, "children", ref.id, "seizures", r.id), Object.assign(stripLocal(r), {by: me, byName: myName, createdAt: F.serverTimestamp(), updatedBy: me, updatedAt: F.serverTimestamp()})).catch(()=>{}));
+    if(local.length) toast(`Copying ${local.length} entr${local.length==1?"y":"ies"} from this phone`);
+  }
+  return ref.id;
+}
+
+// ---------- invites & people ----------
+function randToken(){ const a = new Uint8Array(24); crypto.getRandomValues(a); return Array.from(a, b => (b % 36).toString(36)).join(""); }
+async function createInvite(role){
+  const token = randToken();
+  await withTimeout(F.setDoc(F.doc(fdb, "invites", token), {
+    childId: curChild.id, childName: curChild.name || "", role, createdBy: me, createdByName: myName, usedBy: null,
+    createdAt: F.serverTimestamp(), expiresAt: F.Timestamp.fromMillis(Date.now() + 7*86400e3)
+  }), 15000, "You need signal to create an invite");
+  audit(curChild.id, `invited a ${ROLE_LABEL[role].toLowerCase()}`);
+  return `${location.origin}${location.pathname}?join=${token}`;
+}
+async function acceptPendingJoin(){
+  const token = ls.get(LOCAL_JOIN, null); if(!token) return;
+  try{
+    const inv = await withTimeout(F.getDoc(F.doc(fdb, "invites", token)), 12000, "No signal");
+    if(!inv.exists()){ ls.del(LOCAL_JOIN); toast("That invite link isn't valid – ask for a new one"); return; }
+    const d = inv.data();
+    if(d.usedBy){ ls.del(LOCAL_JOIN); toast(d.usedBy === me ? "You've already joined" : "That invite has already been used – ask for a new one"); return; }
+    if(d.expiresAt && d.expiresAt.toMillis() < Date.now()){ ls.del(LOCAL_JOIN); toast("That invite has expired – ask for a new one"); return; }
+    const ok = await askConfirm(`Join ${d.childName || "this child"}'s team?`, `${d.createdByName || "Someone"} has invited you as a ${ROLE_LABEL[d.role].toLowerCase()}: ${ROLE_HELP[d.role]}.`, "Join");
+    ls.del(LOCAL_JOIN);
+    if(!ok) return;
+    const b = F.writeBatch(fdb);
+    b.update(F.doc(fdb, "children", d.childId), {[`roles.${me}`]: d.role, [`memberNames.${me}`]: myName, inviteUsed: token});
+    b.update(F.doc(fdb, "invites", token), {usedBy: me, usedAt: F.serverTimestamp()});
+    await withTimeout(b.commit(), 15000, "No signal");
+    ls.set(LOCAL_CHILD, d.childId); audit(d.childId, `joined as ${ROLE_LABEL[d.role].toLowerCase()}`);
+    toast(d.childName ? `You've joined ${d.childName}'s team` : "You've joined the team");
+  }catch(e){ console.warn(e); ls.del(LOCAL_JOIN); toast("Couldn't join – the invite may have expired or been used. Ask for a new link."); }
+}
+function setRole(uid, role){ F.updateDoc(F.doc(fdb, "children", curChild.id), {[`roles.${uid}`]: role}).catch(e => handleDbErr(e, "role")); audit(curChild.id, `changed ${(curChild.memberNames||{})[uid]||"someone"} to ${ROLE_LABEL[role].toLowerCase()}`); }
+function removeMember(uid){ F.updateDoc(F.doc(fdb, "children", curChild.id), {[`roles.${uid}`]: F.deleteField(), [`memberNames.${uid}`]: F.deleteField()}).catch(e => handleDbErr(e, "remove")); audit(curChild.id, uid === me ? "left the team" : `removed ${(curChild.memberNames||{})[uid]||"someone"}`); }
+
+// ---------- dialogs that return answers ----------
+function askText(title, body, type){
+  return new Promise(res => {
+    showSheet(`<h3>${esc(title)}</h3><p style="color:var(--muted);margin:4px 0 10px">${esc(body)}</p><input id="askIn" type="${type==="email"?"email":"text"}" ${type==="email"?'inputmode="email" autocomplete="email"':'autocomplete="name"'}>
+      <div class="dialog-btns"><button class="ghost" id="askNo">Cancel</button><button class="primary" id="askYes">OK</button></div>`);
+    setTimeout(() => { const i = $("#askIn"); i && i.focus(); }, 50);
+    $("#askNo").onclick = () => { hideSheet(); res(null); };
+    $("#askYes").onclick = () => { const v = $("#askIn").value.trim(); hideSheet(); res(v || null); };
+  });
+}
+function askConfirm(title, body, okLabel){
+  return new Promise(res => {
+    showSheet(`<h3>${esc(title)}</h3><p style="color:var(--muted)">${esc(body)}</p><div class="dialog-btns"><button class="ghost" id="acNo">Not now</button><button class="primary" id="acYes">${esc(okLabel)}</button></div>`);
+    $("#acNo").onclick = () => { hideSheet(); res(false); };
+    $("#acYes").onclick = () => { hideSheet(); res(true); };
+  });
+}
+
+// ---------- onboarding ----------
+function showOnboarding(signInOnly){
+  const ob = $("#onboard"); ob.classList.remove("hidden");
+  const join = ls.get(LOCAL_JOIN, null);
+  $("#obLocal").classList.toggle("hidden", !!join);
+  $("#obLocalBtn").textContent = signInOnly ? "Not now – keep using this phone only" : "Use on this phone";
+  $("#obIntro").textContent = join ? "You've been invited to help look after a child. Sign in to join their team." : signInOnly ? "Sign in to back up and share the log." : "Time seizures, follow the care plan, and keep a clear record.";
+  $("#obEmailSent").classList.add("hidden"); $("#obEmailForm").classList.remove("hidden");
+}
+function hideOnboarding(){ $("#onboard").classList.add("hidden"); }
+function showChildSetup(){
+  if(sheetOpen()) return;
+  const localN = ls.get("st_seizures_v1", []).length;
+  showSheet(`<h3>Set up a child</h3><p style="color:var(--muted);margin:4px 0 4px">You'll be this child's owner. You can invite family, carers and school afterwards.</p>
+    <label>Child's name</label><input id="csName" autocomplete="off">
+    <label>Age or date of birth (optional)</label><input id="csAge" autocomplete="off">
+    ${localN ? `<label style="display:flex;gap:10px;align-items:center;color:var(--text);margin-top:14px"><input type="checkbox" id="csCopy" checked style="width:auto"> Copy the ${localN} seizure${localN==1?"":"s"} and care plan already saved on this phone</label>` : ""}
+    <div class="note" style="margin-top:12px">Been invited by someone else? Open the invite link they sent you instead.</div>
+    <div class="dialog-btns"><button class="primary" id="csGo">Create</button></div>`);
+  $("#csGo").onclick = async () => { const n = $("#csName").value.trim(); if(!n){ $("#csName").focus(); return; } const age = $("#csAge").value.trim(), c = $("#csCopy"), copy = !!(c && c.checked); hideSheet(); await createChild(n, age, copy); toast(`${n} is set up`); };
+}
+function sheetOpen(){ return !$("#modal").classList.contains("hidden"); }
+
+// ---------- child switcher & picker ----------
+function renderChildSwitch(){
+  const el = $("#childSwitch"); if(!el) return;
+  if(backend !== "firebase" || !curChild || myChildren.length < 2){ el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+  el.innerHTML = myChildren.length > 1 ? `${esc(curChild.name || "Child")} <span style="opacity:.7">▾</span>` : `${esc(curChild.name || "Child")}`;
+}
+function openChildList(){
+  if(active){ toast("Finish the running timer first"); return; }
+  showSheet(`<h3>Children</h3>${myChildren.map(c => `<button class="tile" data-cid="${esc(c.id)}" style="width:100%;margin:8px 0;--c:var(--accent)"><span class="ti">${I("📋")}</span><span>${esc(c.name || "Child")}<small>You're ${ROLE_LABEL[(c.roles||{})[me]]||""}${c.id===curChild.id?" · showing now":""}</small></span></button>`).join("")}
+    <div class="dialog-btns"><button class="ghost" id="clAdd">${I("➕")} Add a child</button><button class="primary" id="clClose">Close</button></div>`);
+  document.querySelectorAll("[data-cid]").forEach(b => b.onclick = () => { const c = myChildren.find(x => x.id === b.dataset.cid); hideSheet(); if(c) applyChild(c); });
+  $("#clClose").onclick = hideSheet; $("#clAdd").onclick = () => { hideSheet(); showChildSetup(); };
+}
+function pickChildThen(go){
+  showSheet(`<h3>Which child?</h3>${myChildren.map(c => `<button class="big-start" data-pick-child="${esc(c.id)}" style="min-height:76px!important;margin:10px 0;font-size:22px!important"><span class="bs-ic" style="width:48px!important;height:48px!important">${I("⏱")}</span><span>${esc(c.name || "Child")}</span></button>`).join("")}
+    <div class="dialog-btns"><button class="ghost" id="pcNo">Cancel</button></div>`);
+  document.querySelectorAll("[data-pick-child]").forEach(b => b.onclick = () => { const c = myChildren.find(x => x.id === b.dataset.pickChild); hideSheet(); if(c){ if(c.id !== curChild.id) applyChild(c); go(); } });
+  $("#pcNo").onclick = hideSheet;
+}
+
+// ---------- roles in the interface ----------
+function canEditRec(rec){
+  if(backend !== "firebase") return canWrite;
+  if(myRole === "owner" || myRole === "carer") return true;
+  if(myRole === "logger"){ const isNew = !serverIds.has(rec.id); return isNew || (rec.by === me && (!rec.createdAt || Date.now() - rec.createdAt < 24*3600e3)); }
+  return false;
+}
+function applyRoleUI(){
+  const fb = backend === "firebase";
+  const viewer = fb && myRole === "viewer";
+  $("#startBtn").disabled = viewer; $("#startBtn").classList.toggle("viewonly", viewer);
+  $("#fabStart").style.visibility = viewer ? "hidden" : "";
+  $("#addPastBtn").classList.toggle("hidden", viewer);
+  const b = $("#roBanner");
+  if(viewer){ b.textContent = "You have view-only access to this child's log."; b.classList.remove("hidden"); }
+  else if(fb && myRole === "logger"){ b.textContent = "You can log seizures. Only the owner can change the care plan."; b.classList.remove("hidden"); }
+  else b.classList.add("hidden");
+  const ownerOnly = fb && myRole !== "owner";
+  const card = $("#saveSettings").closest(".card");
+  card.querySelectorAll("input,select,textarea,button").forEach(x => { if(x.id !== "setTheme") x.disabled = ownerOnly; });
+  $("#saveSettings").classList.toggle("hidden", ownerOnly);
+  let n = $("#ownerNote"); if(!n){ n = document.createElement("div"); n.id = "ownerNote"; n.className = "note"; card.insertBefore(n, card.children[1]); }
+  n.textContent = "Only the child's owner can change the care plan and details. You can still change Appearance for this phone.";
+  n.classList.toggle("hidden", !ownerOnly);
+}
+
+// ---------- account & people cards ----------
+function renderAccount(){
+  const el = $("#accountInfo"); if(!el) return;
+  if(backend === "claude"){ el.closest(".card").classList.add("hidden"); return; }
+  if(backend === "firebase" && fbUser){
+    el.innerHTML = `<p style="margin:0 0 10px;color:var(--muted);font-size:14px">Signed in as <b style="color:var(--text)">${esc(myName || fbUser.displayName || "")}</b>${fbUser.email ? ` (${esc(fbUser.email)})` : ""}. Records are stored securely in London and shared only with each child's team.</p>
+      <div class="row"><button id="acChildren">${I("📋")} Children</button><button class="danger" id="acOut">Sign out</button></div>`;
+    $("#acChildren").onclick = openChildList;
+    $("#acOut").onclick = () => confirmSheet("Sign out?", "The copy of the log on this phone is removed. Everything stays safe in your account.", "Sign out", signOutAll);
+  } else {
+    el.innerHTML = `<p style="margin:0 0 10px;color:var(--muted);font-size:14px">This log is saved <b style="color:var(--text)">on this phone only</b>. Sign in to back it up and share it with family, carers or school. You'll be able to copy these entries across.</p>
+      <button class="primary" id="acIn" style="width:100%">Sign in to back up and share</button>`;
+    $("#acIn").onclick = () => startFirebase();
+  }
+}
+async function signOutAll(){
+  try{ await F.signOut(fbAuth); }catch{}
+  Object.keys(localStorage).filter(k => /^st_cloud/.test(k)).forEach(k => { try{ localStorage.removeItem(k); }catch{} });
+  try{ await F.terminate(fdb); await F.clearIndexedDbPersistence(fdb); }catch{}
+  ls.set(LOCAL_MODE, "local"); ls.del(LOCAL_CHILD); location.reload();
+}
+let lastInvite = null;
+function renderPeople(el){
+  if(el.contains(document.activeElement) && /SELECT|INPUT/.test(document.activeElement.tagName)) return;   // don't redraw under someone's finger
+  if(!curChild){ el.innerHTML = `<p style="margin:0">Set up a child to start sharing.</p>`; return; }
+  const roles = curChild.roles || {}, names = curChild.memberNames || {}, owner = myRole === "owner";
+  const order = Object.keys(roles).sort((a,b) => ROLES.indexOf(roles[a]) - ROLES.indexOf(roles[b]) || (names[a]||"").localeCompare(names[b]||""));
+  el.innerHTML = `<p style="margin:0 0 8px">People who can see ${esc(curChild.name || "this child")}'s log:</p>
+    ${order.map(uid => `<div class="person"><div><b style="color:var(--text)">${esc(names[uid] || "Someone")}${uid===me?" (you)":""}</b><small>${esc(ROLE_LABEL[roles[uid]] || roles[uid])} – ${esc(ROLE_HELP[roles[uid]] || "")}</small></div>
+      ${owner && uid !== me ? `<div class="pact"><select data-role="${esc(uid)}">${ROLES.map(r => `<option value="${r}" ${roles[uid]===r?"selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select><button class="danger" data-rm="${esc(uid)}" aria-label="Remove">✕</button></div>` : ""}</div>`).join("")}
+    ${owner ? `<div style="margin-top:14px;font-weight:700;color:var(--text)">Invite someone</div>
+      <div class="row" style="margin-top:8px"><select id="invRole"><option value="carer">Carer – log and edit</option><option value="logger">Logger – log only (e.g. school)</option><option value="viewer">Viewer – read only (e.g. nurse)</option><option value="owner">Owner – e.g. other parent</option></select></div>
+      <button class="primary" id="invGo" style="width:100%;margin-top:8px">${lastInvite && lastInvite.cid===curChild.id ? "Create another invite link" : "Create invite link"}</button><div id="invOut"></div>
+      <button id="auditBtn" style="width:100%;margin-top:10px">View change history</button>`
+    : `<button class="danger" id="leaveBtn" style="width:100%;margin-top:12px">Leave ${esc(curChild.name || "this child")}'s team</button>`}`;
+  el.querySelectorAll("[data-role]").forEach(s => s.onchange = () => setRole(s.dataset.role, s.value));
+  el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => confirmSheet(`Remove ${names[b.dataset.rm] || "this person"}?`, "They lose access straight away. Entries they logged stay in the log.", "Remove", () => removeMember(b.dataset.rm)));
+  const lb = $("#leaveBtn"); if(lb) lb.onclick = () => confirmSheet("Leave this team?", "You'll no longer see this child's log. The owner can invite you again.", "Leave", () => removeMember(me));
+  const showInvite = () => {
+    if(!lastInvite || lastInvite.cid !== curChild.id || !$("#invOut")) return;
+    const link = lastInvite.link;
+    $("#invOut").innerHTML = `<div class="note" style="margin-top:10px">Send this link to the person you're inviting. It works <b>once</b> and expires in <b>7 days</b>.<input id="invLink" readonly value="${esc(link)}" style="margin-top:8px"><div class="row" style="margin-top:8px"><button id="invCopy">Copy link</button>${navigator.share ? `<button class="primary" id="invShare">${I("📤")} Share</button>` : ""}</div></div>`;
+      $("#invCopy").onclick = async () => { try{ await navigator.clipboard.writeText(link); toast("Link copied"); }catch{ $("#invLink").select(); toast("Select and copy the link"); } };
+      const sh = $("#invShare"); if(sh) sh.onclick = () => navigator.share({title: "Seizure Tracker invite", text: `You've been invited to help look after ${curChild.name || "a child"} in Seizure Tracker. Open this link to join:`, url: link}).catch(()=>{});
+  };
+  showInvite();
+  const ig = $("#invGo"); if(ig) ig.onclick = async () => {
+    ig.disabled = true; ig.textContent = "Creating…";
+    try{ const role = $("#invRole").value; const link = await createInvite(role); lastInvite = {cid: curChild.id, link, role}; showInvite(); }
+    catch(e){ toast(e && e.message ? e.message : "Couldn't create the invite"); }
+    const g = $("#invGo"); if(g){ g.disabled = false; g.textContent = "Create another invite link"; }
+  };
+  const ab = $("#auditBtn"); if(ab) ab.onclick = showAudit;
+}
+async function showAudit(){
+  showSheet(`<h3>Change history</h3><div id="audList" class="subhead">Loading…</div><div class="dialog-btns"><button class="primary" id="audClose">Close</button></div>`);
+  $("#audClose").onclick = hideSheet;
+  try{
+    const s = await withTimeout(F.getDocs(F.query(F.collection(fdb, "children", curChild.id, "audit"), F.orderBy("at", "desc"), F.limit(60))), 12000, "No signal");
+    const rows = s.docs.map(d => d.data());
+    $("#audList").innerHTML = rows.length ? rows.map(r => { const t = r.at && r.at.toMillis ? r.at.toMillis() : Date.now(); const rec = r.start ? ` (seizure ${fmtDate(r.start)} ${fmtTime(r.start)})` : "";
+      return `<div class="person"><div><b style="color:var(--text)">${esc(r.byName || "Someone")}</b> ${esc(r.action)}${esc(rec)}<small>${fmtDate(t)} · ${fmtTime(t)}</small></div></div>`; }).join("") : "No changes yet.";
+  }catch(e){ $("#audList").textContent = "Couldn't load the history – check your signal."; }
+}
+
+// one tap → which child (only when there's more than one)
+{ const orig = $("#startBtn").onclick;
+  $("#startBtn").onclick = e => { if(backend === "firebase" && myChildren.length > 1 && !active) return pickChildThen(() => orig(e)); return orig(e); }; }
+$("#childSwitch").onclick = () => { if(myChildren.length > 1) openChildList(); };
+$("#obLocalBtn").onclick = () => { hideOnboarding(); useLocal(); };
+$("#obGoogle").onclick = async () => { if(backend !== "firebase"){ await startFirebase(); } signInGoogle(); };
+$("#obEmailBtn").onclick = async () => {
+  const em = $("#obEmail").value.trim(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ $("#obEmail").focus(); toast("Type your email address"); return; }
+  const b = $("#obEmailBtn"); b.disabled = true; b.textContent = "Sending…";
+  try{ if(backend !== "firebase") await startFirebase(); await sendEmailLink(em); $("#obEmailForm").classList.add("hidden"); $("#obEmailSent").classList.remove("hidden"); }
+  catch(e){ console.warn(e); toast("Couldn't send the email – check the address and your signal"); }
+  b.disabled = false; b.textContent = "Email me a sign-in link";
+};
+$("#obStart").onclick = () => { hideOnboarding(); if(!backend) useLocal(); $("#startBtn").click(); };
+
 // ---------- boot ----------
 applyTheme(); iconize(); loadLocal(); fillSettings(); render();
 $("#setTheme").onchange=e=>{ ls.set(LOCAL_THEME,e.target.value); applyTheme(); };
@@ -1692,7 +2147,7 @@ if(!active && savedRecov && savedRecov.id && Date.now()-savedRecov.endAt < 6*360
 try{ const q=new URLSearchParams(location.search); if(q.get("start")==="1"){ history.replaceState(null,"",location.pathname); if(!active) $("#startBtn").click(); } }catch{}
 renderShareInfo();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && active){ keepAwake(true); updateClock(); } });
-initDb();
+if(ON_CLAUDE) initDb(); else initStandalone();
 try{ if("serviceWorker" in navigator && location.protocol==="https:" && !/claude\.ai|claudeusercontent/.test(location.host)) navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch{}
 })();
 </script>
