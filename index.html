@@ -1748,7 +1748,7 @@ const FB_CONFIG = {
   appId: "1:1019776849464:web:77a5f4f7f3d02a354d78cd"
 };
 const ROLES = ["owner","carer","logger","viewer"];
-const ROLE_LABEL = {owner:"Owner", carer:"Carer", logger:"Logger", viewer:"Viewer"};
+const ROLE_LABEL = {owner:"Lead carer", carer:"Carer", logger:"Logger", viewer:"Viewer"};
 const ROLE_HELP = {owner:"everything, including the care plan and people", carer:"log seizures and edit entries", logger:"log seizures, and edit their own for 24 hours", viewer:"read only"};
 const LOCAL_MODE="st_mode_v1", LOCAL_CHILD="st_child_v1", LOCAL_JOIN="st_join_v1", LOCAL_EMAIL="st_email_v1";
 let backend = ON_CLAUDE ? "claude" : null;          // "claude" | "local" | "firebase"
@@ -1914,7 +1914,7 @@ function seizureCol(cid){
 function childSettingsRef(cid){
   return {
     set: async s => {
-      if(myRole !== "owner"){ toast("Only the child's owner can change these settings"); return; }
+      if(myRole !== "owner"){ toast("Only a lead carer can change these settings"); return; }
       const {name, ...rest} = s;
       F.updateDoc(F.doc(fdb, "children", cid), {settings: cleanForFs(rest), name: (name || "").trim() || (curChild && curChild.name) || "Child"}).catch(e => handleDbErr(e, "settings"));
       audit(cid, "care plan changed");
@@ -1999,9 +1999,9 @@ function hideOnboarding(){ $("#onboard").classList.add("hidden"); }
 function showChildSetup(){
   if(sheetOpen()) return;
   const localN = ls.get("st_seizures_v1", []).length;
-  showSheet(`<h3>Set up a child</h3><p style="color:var(--muted);margin:4px 0 4px">You'll be this child's owner. You can invite family, carers and school afterwards.</p>
+  showSheet(`<h3>Set up a child</h3><p style="color:var(--muted);margin:4px 0 4px">You'll be this child's lead carer. You can invite family, carers and school afterwards.</p>
     <label>Child's name</label><input id="csName" autocomplete="off">
-    <label>Age or date of birth (optional)</label><input id="csAge" autocomplete="off">
+    <label>Age or date of birth (optional)</label><input id="csAge" autocomplete="off" placeholder="e.g. 9, or 14/03/2017">
     ${localN ? `<label style="display:flex;gap:10px;align-items:center;color:var(--text);margin-top:14px"><input type="checkbox" id="csCopy" checked style="width:auto"> Copy the ${localN} seizure${localN==1?"":"s"} and care plan already saved on this phone</label>` : ""}
     <div class="note" style="margin-top:12px">Been invited by someone else? Open the invite link they sent you instead.</div>
     <div class="dialog-btns"><button class="primary" id="csGo">Create</button></div>`);
@@ -2045,14 +2045,14 @@ function applyRoleUI(){
   $("#addPastBtn").classList.toggle("hidden", viewer);
   const b = $("#roBanner");
   if(viewer){ b.textContent = "You have view-only access to this child's log."; b.classList.remove("hidden"); }
-  else if(fb && myRole === "logger"){ b.textContent = "You can log seizures. Only the owner can change the care plan."; b.classList.remove("hidden"); }
+  else if(fb && myRole === "logger"){ b.textContent = "You can log seizures. Only a lead carer can change the care plan."; b.classList.remove("hidden"); }
   else b.classList.add("hidden");
   const ownerOnly = fb && myRole !== "owner";
   const card = $("#saveSettings").closest(".card");
   card.querySelectorAll("input,select,textarea,button").forEach(x => { if(x.id !== "setTheme") x.disabled = ownerOnly; });
   $("#saveSettings").classList.toggle("hidden", ownerOnly);
   let n = $("#ownerNote"); if(!n){ n = document.createElement("div"); n.id = "ownerNote"; n.className = "note"; card.insertBefore(n, card.children[1]); }
-  n.textContent = "Only the child's owner can change the care plan and details. You can still change Appearance for this phone.";
+  n.textContent = "Only a lead carer can change the care plan and details. You can still change Appearance for this phone.";
   n.classList.toggle("hidden", !ownerOnly);
 }
 
@@ -2087,13 +2087,13 @@ function renderPeople(el){
     ${order.map(uid => `<div class="person"><div><b style="color:var(--text)">${esc(names[uid] || "Someone")}${uid===me?" (you)":""}</b><small>${esc(ROLE_LABEL[roles[uid]] || roles[uid])} – ${esc(ROLE_HELP[roles[uid]] || "")}</small></div>
       ${owner && uid !== me ? `<div class="pact"><select data-role="${esc(uid)}">${ROLES.map(r => `<option value="${r}" ${roles[uid]===r?"selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select><button class="danger" data-rm="${esc(uid)}" aria-label="Remove">✕</button></div>` : ""}</div>`).join("")}
     ${owner ? `<div style="margin-top:14px;font-weight:700;color:var(--text)">Invite someone</div>
-      <div class="row" style="margin-top:8px"><select id="invRole"><option value="carer">Carer – log and edit</option><option value="logger">Logger – log only (e.g. school)</option><option value="viewer">Viewer – read only (e.g. nurse)</option><option value="owner">Owner – e.g. other parent</option></select></div>
+      <div class="row" style="margin-top:8px"><select id="invRole"><option value="carer">Carer – log and edit</option><option value="logger">Logger – log only (e.g. school)</option><option value="viewer">Viewer – read only (e.g. nurse)</option><option value="owner">Lead carer – e.g. other parent</option></select></div>
       <button class="primary" id="invGo" style="width:100%;margin-top:8px">${lastInvite && lastInvite.cid===curChild.id ? "Create another invite link" : "Create invite link"}</button><div id="invOut"></div>
       <button id="auditBtn" style="width:100%;margin-top:10px">View change history</button>`
     : `<button class="danger" id="leaveBtn" style="width:100%;margin-top:12px">Leave ${esc(curChild.name || "this child")}'s team</button>`}`;
   el.querySelectorAll("[data-role]").forEach(s => s.onchange = () => setRole(s.dataset.role, s.value));
   el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => confirmSheet(`Remove ${names[b.dataset.rm] || "this person"}?`, "They lose access straight away. Entries they logged stay in the log.", "Remove", () => removeMember(b.dataset.rm)));
-  const lb = $("#leaveBtn"); if(lb) lb.onclick = () => confirmSheet("Leave this team?", "You'll no longer see this child's log. The owner can invite you again.", "Leave", () => removeMember(me));
+  const lb = $("#leaveBtn"); if(lb) lb.onclick = () => confirmSheet("Leave this team?", "You'll no longer see this child's log. A lead carer can invite you again.", "Leave", () => removeMember(me));
   const showInvite = () => {
     if(!lastInvite || lastInvite.cid !== curChild.id || !$("#invOut")) return;
     const link = lastInvite.link;
