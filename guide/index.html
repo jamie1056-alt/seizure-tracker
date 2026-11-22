@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Getting started – Seizure Tracker</title>
+<link rel="icon" href="../icon-v2-192.png">
+<style>
+:root{--p:#5b3fd8;--p2:#8a5cf0;--ink:#1b2140;--mut:#5d6385;--line:#e4e2f3;--shade:#f5f3fe;--red:#e5484d;--green:#2fb36b}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fbfaff;line-height:1.55;font-size:16px}
+header{background:linear-gradient(135deg,var(--p2),#4b2aa8);color:#fff;padding:28px 20px 34px}
+.wrap{max-width:820px;margin:0 auto;padding:0 20px}
+header .wrap{display:flex;align-items:center;gap:16px;padding:0}
+header img{width:64px;height:64px;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+header .brand{font-weight:700;font-size:15px;opacity:.85;letter-spacing:.02em}
+header h1{margin:2px 0 0;font-size:30px;line-height:1.15}
+header p{margin:6px 0 0;opacity:.9}
+nav.toc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin:-18px auto 8px;position:relative;box-shadow:0 8px 24px rgba(75,42,168,.08)}
+nav.toc b{display:block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--p);margin-bottom:6px}
+nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px}
+nav.toc a{color:var(--ink);text-decoration:none}
+nav.toc a:hover{color:var(--p)}
+section{padding:26px 0 8px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{font-size:22px;margin:0 0 10px;display:flex;align-items:center;gap:10px}
+h2 .n{background:var(--p);color:#fff;border-radius:10px;width:32px;height:32px;display:inline-grid;place-items:center;font-size:16px;flex:none}
+h3{font-size:17px;margin:18px 0 6px}
+ol.steps,ul.ticks{padding-left:22px;margin:8px 0}
+ol.steps li,ul.ticks li{margin:4px 0}
+.split{display:grid;grid-template-columns:1fr 230px;gap:24px;align-items:start}
+.split.rev{grid-template-columns:230px 1fr}
+.shot{width:100%;border-radius:22px;border:6px solid #1b2140;box-shadow:0 10px 30px rgba(27,33,64,.18);display:block}
+.cap{font-size:13px;color:var(--mut);text-align:center;margin-top:6px}
+.tip,.warn{border-radius:14px;padding:12px 14px;margin:14px 0;font-size:15px}
+.tip{background:var(--shade);border-left:4px solid var(--p)}
+.warn{background:#fff1f1;border-left:4px solid var(--red)}
+.tip b:first-child,.warn b:first-child{display:block;margin-bottom:2px}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:15px}
+th{background:var(--p);color:#fff;text-align:left;padding:9px 10px;font-weight:600}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:nth-child(even) td{background:var(--shade)}
+.btn{display:inline-block;background:var(--shade);border:1px solid var(--line);border-radius:8px;padding:0 7px;font-weight:600;font-size:.92em;white-space:nowrap}
+.btn.red{background:var(--red);color:#fff;border-color:var(--red)}
+.btn.green{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.blue{background:#2f6fe0;color:#fff;border-color:#2f6fe0}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:12px 0}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.card b{display:block;margin-bottom:2px}
+.card span{font-size:14px;color:var(--mut)}
+footer{background:var(--ink);color:#c9cbe0;font-size:13px;padding:22px 0;margin-top:30px}
+footer .wrap{display:flex;gap:12px;align-items:center}
+footer img{width:34px;height:34px;border-radius:9px}
+.open{display:inline-block;margin-top:14px;background:#fff;color:var(--p);font-weight:700;padding:10px 16px;border-radius:12px;text-decoration:none}
+@media (max-width:640px){.split,.split.rev{grid-template-columns:1fr}.shot{max-width:250px;margin:0 auto}nav.toc ol{columns:1}.cards{grid-template-columns:1fr}header h1{font-size:25px}}
+@media print{body{background:#fff;font-size:12.5px}header{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:18px 0}.open,nav.toc{display:none}section{break-inside:avoid-page}.shot{max-width:190px;border-width:4px}th,.btn,h2 .n,.tip,.warn,tr:nth-child(even) td{-webkit-print-color-adjust:exact;print-color-adjust:exact}footer{background:#fff;color:var(--mut)}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <img src="../icon-v2-192.png" alt="">
+  <div>
+    <div class="brand">SEIZURE TRACKER</div>
+    <h1>Getting started guide</h1>
+    <p>For parents, family, carers and school staff.</p>
+    <a class="open" href="../index.html">Open the app →</a>
+  </div>
+</div></header>
+
+<div class="wrap">
+<nav class="toc"><b>Contents</b><ol>
+  <li><a href="#what">What the app does</a></li>
+  <li><a href="#install">Install it on your phone</a></li>
+  <li><a href="#first">First time you open it</a></li>
+  <li><a href="#setup">Set up the care plan</a></li>
+  <li><a href="#during">During a seizure</a></li>
+  <li><a href="#after">After a seizure</a></li>
+  <li><a href="#history">History and patterns</a></li>
+  <li><a href="#doctor">Send a report to the doctor</a></li>
+  <li><a href="#team">Share with your team</a></li>
+  <li><a href="#privacy">Privacy and security</a></li>
+  <li><a href="#tips">Tips and troubleshooting</a></li>
+</ol></nav>
+
+<section id="what">
+  <h2><span class="n">1</span>What the app does</h2>
+  <p>Seizure Tracker helps you <b>time a seizure, follow the care plan and keep an accurate record</b> – then share that record with the people who need it.</p>
+  <div class="cards">
+    <div class="card"><b>⏱ Emergency timer</b><span>Large clock, alarm at the time in the care plan, step-by-step prompts.</span></div>
+    <div class="card"><b>📞 Info for 999</b><span>Everything the operator needs, ready to read out.</span></div>
+    <div class="card"><b>📝 Accurate log</b><span>What you saw, VNS, rescue medication and video – filled in as you go.</span></div>
+    <div class="card"><b>👥 Shared with the team</b><span>Family, carers and school see the same log, live.</span></div>
+  </div>
+  <div class="warn"><b>Always follow the care plan and call 999 in an emergency.</b>The app supports you; it doesn't replace medical advice or the care plan from your child's medical team.</div>
+</section>
+
+<section id="install">
+  <h2><span class="n">2</span>Install it on your phone</h2>
+  <p>There's nothing to download from an app store. You add it to your home screen from the web, and it then opens full screen like any other app.</p>
+  <h3>Android (Chrome)</h3>
+  <ol class="steps">
+    <li>Open <b>Chrome</b> and go to <b>jamie1056-alt.github.io/seizure-tracker</b></li>
+    <li>Tap the <b>⋮</b> menu, then <b>Add to home screen</b> → <b>Install</b>.</li>
+    <li>Open <b>Seizure Tracker</b> from your home screen.</li>
+  </ol>
+  <h3>iPhone (Safari)</h3>
+  <ol class="steps">
+    <li>Open the same address in <b>Safari</b>.</li>
+    <li>Tap the <b>Share</b> button, then <b>Add to Home Screen</b> → <b>Add</b>.</li>
+  </ol>
+  <div class="tip"><b>Shortcut for emergencies</b>On Android, press and hold the app icon and choose <b>Start seizure timer</b> – it opens straight into the timer. You can drag that shortcut onto your home screen too.</div>
+</section>
+
+<section id="first">
+  <h2><span class="n">3</span>First time you open it</h2>
+  <p>You'll be asked how you'd like to keep the log. You can change your mind later.</p>
+  <table>
+    <tr><th style="width:34%">Choice</th><th>Best for</th></tr>
+    <tr><td><b>Use on this phone only</b></td><td>A single family phone. Nothing leaves the phone. Download a backup now and then from <b>Settings → Backup</b>.</td></tr>
+    <tr><td><b>Sign in</b> (Google or email link)</td><td>Backing up safely and sharing with others. Needed if more than one person logs seizures.</td></tr>
+  </table>
+  <p>When you sign in for the first time you'll <b>set up a child</b>: enter a name (initials are fine) and, if you like, age or date of birth. If you were already using the app, keep <b>"Copy the seizures already saved on this phone"</b> ticked so nothing is lost. You become the child's <b>lead carer</b>.</p>
+  <div class="tip"><b>Been sent an invite link?</b>Don't set up a child – just open the link and sign in. You'll join the existing team. See <a href="#team">section 9</a>.</div>
+</section>
+
+<section id="setup">
+  <h2><span class="n">4</span>Set up the care plan</h2>
+  <div class="split">
+    <div>
+      <p>Go to <b>Settings</b> and fill in as much as you can, then tap <b>Save settings</b>. A lead carer does this once; everyone in the team then sees it.</p>
+      <ul class="ticks">
+        <li><b>Child's name, age and home address</b> – shown on the 999 card.</li>
+        <li><b>Medical information</b> – diagnosis, VNS, rescue medication, allergies.</li>
+        <li><b>Emergency contacts.</b></li>
+        <li><b>Alarm time</b> – when the alarm should sound (for example 5 minutes, as in the care plan).</li>
+        <li><b>Care plan steps</b> – what to do and when, e.g. "2:00 swipe the VNS magnet", "5:00 give rescue medication". The timer prompts you at each one.</li>
+        <li><b>VNS</b> – the gap between swipes and the maximum number.</li>
+        <li><b>Recovery checks</b> – how often to be reminded to check breathing.</li>
+        <li><b>Doctor's email.</b></li>
+      </ul>
+      <p>The <b>Seizure passport</b> in Settings turns all of this into a one-page summary for school, a babysitter or a hospital visit.</p>
+    </div>
+    <div><img class="shot" src="settings.png" alt="Settings screen"><div class="cap">Settings</div></div>
+  </div>
+</section>
+
+<section id="during">
+  <h2><span class="n">5</span>During a seizure</h2>
+  <div class="split rev">
+    <div><img class="shot" src="timer.png" alt="Timer running"><div class="cap">The emergency timer</div></div>
+    <div>
+      <p>Tap the big red <span class="btn red">Seizure started</span> button on the Home screen – or <span class="btn red">Start timer</span> on any other screen.</p>
+      <ol class="steps">
+        <li><b>Tap the screen once</b> to switch on alarm sounds (phones need a tap before they'll play sound).</li>
+        <li>Follow the <b>care plan prompts</b> as they appear and tap <span class="btn blue">Done</span> or <span class="btn">Not needed</span>.</li>
+        <li>Use the buttons to record what happens – each is time-stamped:
+          <ul>
+            <li><span class="btn">Record video</span> – films with the seizure clock shown on the video.</li>
+            <li><span class="btn">VNS swiped</span> – starts the swipe timer and reminds you when the next swipe is due, up to the maximum.</li>
+            <li><span class="btn">Rescue med given</span></li>
+            <li><span class="btn">Mark moment</span> – tap everything you can see (jerking, staring, lips blue…). These are filled into the record for you afterwards.</li>
+          </ul></li>
+        <li>When the alarm time is reached the alarm sounds. <span class="btn">Silence alarm</span> appears only once it's ringing.</li>
+        <li>When it stops, tap <span class="btn green">Seizure ended</span>.</li>
+      </ol>
+      <p>Started it by mistake? Tap <b>Started by mistake</b> at the bottom – nothing is saved.</p>
+    </div>
+  </div>
+  <div class="split" style="margin-top:12px">
+    <div>
+      <h3>Calling 999</h3>
+      <p>Tap <span class="btn">Info for 999</span>. It shows the address, the child's age, how long the seizure has lasted, VNS and rescue medication given, what you've seen and the medical information – in large text, ready to <b>read to the operator</b>. It keeps updating while it's open.</p>
+      <div class="tip"><b>Tip for Samsung phones</b>Set up <b>Emergency SOS</b> in the phone's Settings (Safety and emergency). Pressing the side key quickly several times then calls 999 and shares your location.</div>
+    </div>
+    <div><img class="shot" src="operator.png" alt="999 operator card"><div class="cap">Info for 999</div></div>
+  </div>
+</section>
+
+<section id="after">
+  <h2><span class="n">6</span>After a seizure</h2>
+  <div class="split rev">
+    <div><img class="shot" src="recovery.png" alt="Recovery timer"><div class="cap">Recovery timer</div></div>
+    <div>
+      <p>The <b>recovery timer</b> starts straight away and reminds you to check breathing at the interval set in Settings. <span class="btn">Recovery position</span> shows a diagram and steps.</p>
+      <p>Tap <span class="btn green">Back to normal</span> when they've recovered – the recovery time is saved.</p>
+      <p>Then tap <span class="btn">Add details now</span> (or later, from the list). The record is already filled in with the time, length, VNS swipes, rescue medication and everything you marked. Add:</p>
+      <ul class="ticks">
+        <li><b>Severity</b> (1 mild – 5 severe) and <b>type</b></li>
+        <li>Anything else you saw, possible triggers and notes</li>
+      </ul>
+      <p>Tap <b>Save</b>. Everyone in the team sees it straight away.</p>
+    </div>
+  </div>
+  <div class="split" style="margin-top:6px">
+    <div>
+      <h3>Missed the timer?</h3>
+      <p>Use <span class="btn">+ Log past</span> at the top of the Home screen to record a seizure afterwards, with the time it started and roughly how long it lasted.</p>
+    </div>
+    <div><img class="shot" src="record.png" alt="Seizure record form"><div class="cap">The record, pre-filled</div></div>
+  </div>
+</section>
+
+<section id="history">
+  <h2><span class="n">7</span>History and patterns</h2>
+  <div class="split">
+    <div>
+      <p>The <b>Home</b> screen shows seizure-free days, the best streak and the last 30 days at a glance.</p>
+      <p><b>History</b> shows:</p>
+      <ul class="ticks">
+        <li>Seizures per week and per month</li>
+        <li>Patterns – time of day, type and possible triggers</li>
+        <li>Every seizure, grouped by day and colour-coded by type. Tap one to see or edit it, or to watch its video.</li>
+      </ul>
+      <p>Each entry shows who logged it, so you always know whether it came from home, school or a carer.</p>
+    </div>
+    <div><img class="shot" src="history.png" alt="History screen"><div class="cap">History</div></div>
+  </div>
+</section>
+
+<section id="doctor">
+  <h2><span class="n">8</span>Send a report to the doctor</h2>
+  <div class="split rev">
+    <div><img class="shot" src="report.png" alt="Share with the doctor"><div class="cap">History → Share with the doctor</div></div>
+    <div>
+      <ol class="steps">
+        <li>Go to <b>History</b> and scroll to <b>Share with the doctor</b>.</li>
+        <li>Choose the <b>period</b> (last 30 days, 3 months, etc.).</li>
+        <li>Tap <span class="btn blue">Send PDF report</span> and choose <b>Gmail</b> or your email app.</li>
+        <li>The email opens with a professional PDF attached – a summary table and a table of every seizure. Add the doctor's address and send.</li>
+      </ol>
+      <p><span class="btn">Download PDF</span> saves it to the phone instead, for printing or taking to an appointment. <b>Download spreadsheet</b> gives the full record for Excel.</p>
+      <div class="tip"><b>Videos</b>Video clips stay on the phone that recorded them and are never uploaded. The report says how many clips exist so the doctor can ask to see them.</div>
+    </div>
+  </div>
+</section>
+
+<section id="team">
+  <h2><span class="n">9</span>Share with your team</h2>
+  <p>Signed-in users can invite other people to the child's log. Everyone uses their <b>own login</b>, and the lead carer decides what each person can do.</p>
+  <table>
+    <tr><th style="width:24%">Role</th><th>Can do</th><th style="width:28%">Typical for</th></tr>
+    <tr><td><b>Lead carer</b></td><td>Everything, including the care plan, settings and inviting or removing people</td><td>Parents</td></tr>
+    <tr><td><b>Carer</b></td><td>Log seizures and edit any entry</td><td>Family, regular carers</td></tr>
+    <tr><td><b>Logger</b></td><td>Log seizures; edit their own entries for 24 hours</td><td>School, clubs, respite</td></tr>
+    <tr><td><b>Viewer</b></td><td>Read only</td><td>School nurse, specialist nurse</td></tr>
+  </table>
+  <h3>Invite someone (lead carer)</h3>
+  <ol class="steps">
+    <li>Go to <b>Settings → People</b>.</li>
+    <li>Under <b>Invite someone</b>, choose what they can do.</li>
+    <li>Tap <b>Create invite link</b>, then <b>Share</b> it by text, WhatsApp or email.</li>
+  </ol>
+  <p>Each link works <b>once</b> and expires after <b>7 days</b>.</p>
+  <h3>Join a team (the person invited)</h3>
+  <ol class="steps">
+    <li>Open the link on your phone and install the app (<a href="#install">section 2</a>).</li>
+    <li>Sign in with Google or your email address.</li>
+    <li>You'll see the child's log straight away – there's nothing else to set up.</li>
+  </ol>
+  <h3>Looking after more than one child?</h3>
+  <p>Carers can belong to several children's teams. When you belong to more than one, a <b>child switcher</b> appears at the top, and <b>Seizure started</b> asks which child first – so a seizure is never logged against the wrong child.</p>
+  <p>Lead carers can change someone's role or remove them at any time from <b>Settings → People</b>, and can see a history of changes.</p>
+</section>
+
+<section id="privacy">
+  <h2><span class="n">10</span>Privacy and security</h2>
+  <ul class="ticks">
+    <li><b>Phone only:</b> the log never leaves the phone.</li>
+    <li><b>Signed in:</b> the log is stored securely in Google's London data centre, encrypted in transit and at rest.</li>
+    <li>Only people the lead carer has invited can see a child's log – this is enforced on the server, not just in the app.</li>
+    <li><b>Videos are never uploaded</b>; they stay on the phone that recorded them.</li>
+    <li>Signing out removes the shared copy from that phone.</li>
+    <li>Use a first name or initials for the child if you prefer.</li>
+  </ul>
+</section>
+
+<section id="tips">
+  <h2><span class="n">11</span>Tips and troubleshooting</h2>
+  <table>
+    <tr><th style="width:38%">If…</th><th>Try this</th></tr>
+    <tr><td>The alarm didn't make a sound</td><td>Tap the timer screen once after starting, and check the phone isn't on silent. Keep the timer on screen during a seizure.</td></tr>
+    <tr><td>You want the latest version</td><td>Close the app fully (swipe it away) and open it again while you have signal.</td></tr>
+    <tr><td>No signal</td><td>Everything still works. Entries are saved on the phone and sync when signal returns.</td></tr>
+    <tr><td>The email or camera doesn't open</td><td>Make sure you're using the installed app or Chrome/Safari – not a link opened inside another app.</td></tr>
+    <tr><td>An invite link says it's used or expired</td><td>Ask the lead carer for a new one.</td></tr>
+    <tr><td>Practise</td><td>Start the timer, tap a few buttons and then <b>Started by mistake</b> – nothing is saved.</td></tr>
+  </table>
+</section>
+</div>
+
+<footer><div class="wrap">
+  <img src="../icon-v2-192.png" alt="">
+  <div><b style="color:#fff">Seizure Tracker</b> · Getting started guide · November 2026<br>This app supports families and carers. Always follow the care plan and seek medical help in an emergency.</div>
+</div></footer>
+</body>
+</html>
