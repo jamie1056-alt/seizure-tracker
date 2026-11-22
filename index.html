@@ -100,7 +100,8 @@ textarea{min-height:80px;resize:vertical}
 #clockSub{white-space:pre-line;font-size:17px;line-height:1.45}
 .subrow{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
 #recovBtn{background:transparent;border:1px solid var(--line);padding:8px 12px;font-size:14px}
-.rp svg{width:100%;height:auto;background:#262a35;border-radius:14px}
+.rp svg{width:100%;height:auto;background:transparent;border-radius:14px}
+.rp svg text{fill:#1b2140!important;opacity:1!important;font-size:11.5px}
 .rp ol{padding-left:22px;margin:12px 0;font-size:17px;line-height:1.45}
 .rp li{margin-bottom:8px}
 #timer .events div{padding:4px 0}
@@ -487,6 +488,9 @@ html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21
 .big-start.viewonly{filter:grayscale(1);opacity:.5}
 html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(21,32,58,.05),0 6px 20px rgba(21,32,58,.06)}
 #title .tsub{display:block;font-size:.62em;font-weight:600;color:var(--muted);letter-spacing:.01em;margin-top:1px}
+.disc{margin:6px 0 4px;padding-left:20px;font-size:14px;line-height:1.45}.disc li{margin-bottom:7px}
+.discbox{background:#fff1f1;border:2px solid #e5484d;color:#1b2140;border-radius:14px;padding:12px 14px;margin:6px 0 12px}
+.discbox b.t{display:block;color:#c0282e;font-size:15px;margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -667,6 +671,16 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
       <button id="camTest">Test camera</button>
       <div id="camTestOut" style="font-size:14px;color:var(--muted);margin-top:8px"></div>
     </div>
+    <div class="card" style="--acc:#e5484d" id="aboutCard">
+      <h2>Important information</h2>
+      <ul class="disc"><li><b>Not a medical device.</b> Seizure Tracker is a record-keeping and reminder tool. It has not been assessed, registered or approved by the MHRA or any other regulator.</li>
+<li><b>It does not detect, monitor, diagnose or predict seizures</b>, and it does not give medical advice.</li>
+<li><b>Always follow the child's care plan</b> and the advice of their doctors and nurses. If anything in the app differs from the care plan, the care plan wins.</li>
+<li><b>In an emergency, call 999.</b> Never wait for the app.</li>
+<li><b>Don't rely on it alone.</b> Timers, alarms and reminders depend on the phone – battery, volume, silent mode, the screen being on and signal – and may not sound.</li>
+<li><b>Records are made by family and carers.</b> They may be incomplete or inaccurate and are not a clinical record. Check them before sharing.</li></ul>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Using Seizure Tracker means you accept this. Full details are in the <a href="guide/#important" target="_blank" rel="noopener">getting started guide</a>.</p>
+    </div>
     <div class="note">General first-aid guidance (NHS / Epilepsy Action): call 999 if a seizure lasts more than 5 minutes, if one seizure follows another without recovery in between, if the child is injured, or if it's their first seizure. The child's own care plan takes priority – set the alarm to the time their plan gives.</div>
   </section>
 </div>
@@ -744,7 +758,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
     </div>
     <button class="obsos" id="obStart"><span class="em">⏱</span> Seizure happening now? Start the timer</button>
     <p class="fine"><a href="guide/" target="_blank" rel="noopener" style="color:inherit;font-weight:600">New here? Read the getting started guide</a></p>
-    <p class="fine">A record-keeping tool that follows the child's care plan. It isn't medical advice.</p>
+    <p class="fine" style="font-weight:600">Not a medical device. It doesn't detect seizures or give medical advice. Always follow the care plan – in an emergency call 999.</p>
   </div>
 </div>
 <div id="modal" class="hidden"><div class="sheet" id="sheet"></div></div>
@@ -1259,7 +1273,7 @@ async function saveClip(rec, clip, i){
 }
 
 // ---------- recovery position ----------
-const RP_SVG=`<svg viewBox="0 0 340 200" role="img" aria-label="Child lying on their side in the recovery position"><rect x="0" y="0" width="340" height="200" fill="#262a35"/><line x1="8" y1="162" x2="332" y2="162" stroke="#4a5060" stroke-width="3" stroke-linecap="round"/><g stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M74 146 L22 154" stroke="#262a35" stroke-width="18"/><path d="M74 146 L22 154" stroke="#5f7fd0" stroke-width="11"/><path d="M190 140 L304 150" stroke="#262a35" stroke-width="22"/><path d="M190 140 L304 150" stroke="#5f7fd0" stroke-width="15"/><path d="M76 136 L188 136" stroke="#262a35" stroke-width="41"/><path d="M76 136 L188 136" stroke="#8fb0ff" stroke-width="34"/><path d="M186 128 L226 156 L282 156" stroke="#262a35" stroke-width="23"/><path d="M186 128 L226 156 L282 156" stroke="#c4d4ff" stroke-width="16"/><path d="M92 124 L118 156 L62 150" stroke="#262a35" stroke-width="18"/><path d="M92 124 L118 156 L62 150" stroke="#c4d4ff" stroke-width="11"/></g><circle cx="48" cy="128" r="22" fill="#262a35"/><circle cx="48" cy="128" r="19" fill="#8fb0ff"/><circle cx="40" cy="124" r="2.6" fill="#1d2029"/><path d="M36 136 q4 4 9 2" stroke="#1d2029" stroke-width="2" fill="none" stroke-linecap="round"/><g fill="#f2f3f7" font-size="12" font-family="system-ui,sans-serif"><text x="6" y="20">Head tilted back,</text><text x="6" y="35">chin up – airway open</text><path d="M44 40 L46 102" stroke="#f2f3f7" stroke-width="1.5"/><text x="150" y="20">Top hand under cheek</text><path d="M170 26 L70 146" stroke="#f2f3f7" stroke-width="1.5"/><text x="222" y="72">Top knee bent,</text><text x="222" y="87">resting on floor</text><path d="M240 92 L228 150" stroke="#f2f3f7" stroke-width="1.5"/><text x="6" y="190">Bottom arm out in front</text><path d="M40 180 L30 158" stroke="#f2f3f7" stroke-width="1.5"/><text x="222" y="190">Bottom leg straight</text><path d="M300 179 L300 154" stroke="#f2f3f7" stroke-width="1.5"/></g></svg>`;
+const RP_SVG=`<svg viewBox="0 0 360 230" role="img" aria-label="Child lying on their side in the recovery position"><rect width="360" height="230" rx="16" fill="#f5f3fe"/><path d="M14 150 Q180 132 346 150 L346 214 Q180 226 14 214 Z" fill="#e6e1fb"/><ellipse cx="190" cy="176" rx="150" ry="16" fill="#cfc6f5" opacity=".7"/><g stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M200 140 L322 146" stroke="#1f2b52" stroke-width="27"/><path d="M200 140 L322 146" stroke="#33467f" stroke-width="22"/><path d="M322 146 L338 140" stroke="#1b2140" stroke-width="13"/><path d="M118 150 L116 192 L88 202" stroke="#5a3fc4" stroke-width="19"/><path d="M118 150 L116 192 L88 202" stroke="#8a6cf2" stroke-width="14"/><path d="M104 197 L80 205" stroke="#e0ab84" stroke-width="13"/><path d="M86 132 L100 134" stroke="#d9a47e" stroke-width="16"/><path d="M86 132 L100 134" stroke="#f1c7a3" stroke-width="12"/><path d="M96 124 C104 114 128 112 146 118 C160 122 172 124 186 121 C204 118 220 124 222 138 C224 152 210 160 192 158 C172 156 160 158 144 160 C124 163 102 160 96 150 C92 142 92 132 96 124 Z" fill="#8a6cf2" stroke="#5a3fc4" stroke-width="3"/><path d="M204 136 L236 186 L296 190" stroke="#1f2b52" stroke-width="29"/><path d="M204 136 L236 186 L296 190" stroke="#3f57a0" stroke-width="24"/><path d="M296 190 L314 186" stroke="#1b2140" stroke-width="14"/><path d="M126 128 L104 168 L64 160" stroke="#5a3fc4" stroke-width="19"/><path d="M126 128 L104 168 L64 160" stroke="#9b80f6" stroke-width="14"/></g><circle cx="70" cy="128" r="25" fill="#f1c7a3" stroke="#d9a47e" stroke-width="2"/><path d="M58 106 C78 96 100 110 95 132 C92 126 86 120 80 118 C74 114 64 112 58 106 Z" fill="#4a3426"/><path d="M58 106 C66 100 76 100 84 104" stroke="#4a3426" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="58" cy="124" r="2.4" fill="#1b2140"/><path d="M53 116 q5 -3 10 0" stroke="#4a3426" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M50 137 q4 3 8 1" stroke="#a0525a" stroke-width="2" fill="none" stroke-linecap="round"/><ellipse cx="62" cy="156" rx="13" ry="7" fill="#f1c7a3" stroke="#d9a47e" stroke-width="2" transform="rotate(-8 62 156)"/><g font-family="Inter,system-ui,sans-serif" font-size="11.5" style="fill:#1b2140;opacity:1"><g stroke="#5b3fd8" stroke-width="1.3" fill="none"><path d="M30 46 L46 104"/><path d="M168 30 L80 152"/><path d="M262 82 L240 168"/><path d="M40 214 L82 204"/><path d="M300 108 L310 140"/></g><g fill="#5b3fd8"><circle cx="46" cy="104" r="2.6"/><circle cx="80" cy="152" r="2.6"/><circle cx="240" cy="168" r="2.6"/><circle cx="82" cy="204" r="2.6"/><circle cx="310" cy="140" r="2.6"/></g><text x="10" y="22" font-weight="700">Head tilted back,</text><text x="10" y="37">chin up – airway open</text><text x="150" y="22" font-weight="700">Top hand under cheek</text><text x="232" y="62" font-weight="700">Top knee bent,</text><text x="232" y="76">resting on the floor</text><text x="262" y="104" font-weight="700" text-anchor="end" dx="76">Bottom leg straight</text><text x="10" y="226" font-weight="700" dy="-6" x2="0">Bottom arm out, palm up</text></g></svg>`;
 function openRecovery_guide(back){
   showSheet(`<h3>Recovery position</h3><div class="rp">
    <p style="color:var(--muted);margin:4px 0 10px">Once the jerking has stopped. Follow the care plan if it says something different.</p>
@@ -1484,7 +1498,7 @@ function passportHTML(forFile){
   ${med?`<h2>Medical information</h2><table>${med}</table>`:""}
   ${settings.contacts?`<h2>Emergency contacts</h2><p>${L(settings.contacts)}</p>`:""}
   ${settings.addr?`<h2>Home address</h2><p>${L(settings.addr)}</p>`:""}
-  <h2>Recovery position</h2><div class="rp">${svg}</div>`;
+  <h2>Recovery position</h2><div class="rp">${svg}</div><p style="font-size:12px;color:#5d6385;margin-top:18px">Made with Seizure Tracker by the child's family. This passport supports, and does not replace, the child's official care plan. Seizure Tracker is not a medical device. In an emergency call 999.</p>`;
   if(!forFile) return body;
   return `<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Seizure passport</title>
   <style>body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d2433;max-width:760px;margin:24px auto;padding:0 18px}
@@ -1718,7 +1732,7 @@ function buildPdf(daysArg){
     });
     y+=12;
   }
-  need(30); pdfWrap("Times shown as m:ss are from the start of the seizure. Video clips are kept on the carer's phone and can be shared on request. Recorded with Seizure Tracker by the child's family and carers; not a clinical record.",8,false,CW).forEach(l=>{ text(l,M,y+8,8,{color:MUTED}); y+=11; });
+  need(30); pdfWrap("Times shown as m:ss are from the start of the seizure. Video clips are kept on the carer's phone and can be shared on request. Recorded by the child's family and carers using Seizure Tracker. This is not a clinical record, and Seizure Tracker is not a medical device – it does not detect, monitor or diagnose seizures.",8,false,CW).forEach(l=>{ text(l,M,y+8,8,{color:MUTED}); y+=11; });
   pages.push(ops);
 
   // assemble
@@ -2274,6 +2288,24 @@ $("#obEmailBtn").onclick = async () => {
   b.disabled = false; b.textContent = "Email me a sign-in link";
 };
 $("#obStart").onclick = () => { hideOnboarding(); if(!backend) useLocal(); $("#startBtn").click(); };
+
+// ---------- disclaimer (shown once, never over a running timer) ----------
+const DISC_KEY="st_disclaimer_v1";
+function showDisclaimer(){
+  showSheet(`<h3>Before you start – important</h3><div class="discbox"><b class="t">Seizure Tracker is not a medical device</b><ul class="disc" style="margin:0">${`<li><b>Not a medical device.</b> Seizure Tracker is a record-keeping and reminder tool. It has not been assessed, registered or approved by the MHRA or any other regulator.</li>
+<li><b>It does not detect, monitor, diagnose or predict seizures</b>, and it does not give medical advice.</li>
+<li><b>Always follow the child's care plan</b> and the advice of their doctors and nurses. If anything in the app differs from the care plan, the care plan wins.</li>
+<li><b>In an emergency, call 999.</b> Never wait for the app.</li>
+<li><b>Don't rely on it alone.</b> Timers, alarms and reminders depend on the phone – battery, volume, silent mode, the screen being on and signal – and may not sound.</li>
+<li><b>Records are made by family and carers.</b> They may be incomplete or inaccurate and are not a clinical record. Check them before sharing.</li>`}</ul></div>
+  <button class="primary" id="discOk" style="width:100%">I understand</button>`);
+  $("#discOk").onclick=()=>{ ls.set(DISC_KEY,{at:Date.now()}); hideSheet(); };
+}
+const discTimer=setInterval(()=>{
+  if(ls.get(DISC_KEY)){ clearInterval(discTimer); return; }
+  const onb=$("#onboard"); if(active || (onb && !onb.classList.contains("hidden")) || !$("#modal").classList.contains("hidden")) return;
+  clearInterval(discTimer); showDisclaimer();
+},1500);
 
 // ---------- boot ----------
 applyTheme(); iconize(); loadLocal(); fillSettings(); render();
