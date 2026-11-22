@@ -2231,6 +2231,24 @@ async function signOutAll(){
   try{ await F.terminate(fdb); await F.clearIndexedDbPersistence(fdb); }catch{}
   ls.set(LOCAL_MODE, "local"); ls.del(LOCAL_CHILD); location.reload();
 }
+async function deleteChild(){
+  if(!curChild || myRole !== "owner") return;
+  const c = curChild, name = c.name || "this child";
+  const others = Object.keys(c.roles || {}).filter(u => u !== me).length;
+  const typed = await askText(`Delete ${name}?`, `This permanently deletes ${name}'s details, care plan and every seizure record${others ? `, for all ${others+1} people on the team` : ""}. It can't be undone – download a backup or PDF first if you need one. Type the child's name to confirm:`, "text");
+  if(typed === null) return;
+  if(typed.trim().toLowerCase() !== (c.name || "").trim().toLowerCase()){ toast("The name didn't match – nothing was deleted"); return; }
+  toast("Deleting…");
+  try{
+    const snap = await withTimeout(F.getDocs(F.collection(fdb, "children", c.id, "seizures")), 20000, "No signal");
+    const docs = snap.docs;
+    for(let i = 0; i < docs.length; i += 400){ const b = F.writeBatch(fdb); docs.slice(i, i+400).forEach(d => b.delete(d.ref)); await withTimeout(b.commit(), 20000, "No signal"); }
+    await withTimeout(F.deleteDoc(F.doc(fdb, "children", c.id)), 20000, "No signal");
+    ["st_cloud_"+c.id, "st_cloudset_"+c.id].forEach(k => { try{ localStorage.removeItem(k); }catch{} });
+    if(ls.get(LOCAL_CHILD, null) === c.id) ls.del(LOCAL_CHILD);
+    curChild = null; toast(`${name} has been deleted`);
+  }catch(e){ toast("Couldn't delete – check your signal and try again"); console.warn(e); }
+}
 let lastInvite = null;
 function renderPeople(el){
   if(el.contains(document.activeElement) && /SELECT|INPUT/.test(document.activeElement.tagName)) return;   // don't redraw under someone's finger
@@ -2244,10 +2262,12 @@ function renderPeople(el){
       <div style="color:var(--muted);font-size:14px;margin-top:4px">Choose what the person you're inviting can do:</div>
       <div class="row" style="margin-top:8px"><select id="invRole"><option value="carer">Carer – log and edit</option><option value="logger">Logger – log only (e.g. school)</option><option value="viewer">Viewer – read only (e.g. nurse)</option><option value="owner">Lead carer – e.g. other parent</option></select></div>
       <button class="primary" id="invGo" style="width:100%;margin-top:8px">${lastInvite && lastInvite.cid===curChild.id ? "Create another invite link" : "Create invite link"}</button><div id="invOut"></div>
-      <button id="auditBtn" style="width:100%;margin-top:10px">View change history</button>`
+      <button id="auditBtn" style="width:100%;margin-top:10px">View change history</button>
+      <button class="danger" id="delChildBtn" style="width:100%;margin-top:18px">Delete ${esc(curChild.name || "this child")} and all their records</button>`
     : `<button class="danger" id="leaveBtn" style="width:100%;margin-top:12px">Leave ${esc(curChild.name || "this child")}'s team</button>`}`;
   el.querySelectorAll("[data-role]").forEach(s => s.onchange = () => setRole(s.dataset.role, s.value));
   el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => confirmSheet(`Remove ${names[b.dataset.rm] || "this person"}?`, "They lose access straight away. Entries they logged stay in the log.", "Remove", () => removeMember(b.dataset.rm)));
+  const dc = $("#delChildBtn"); if(dc) dc.onclick = () => deleteChild();
   const lb = $("#leaveBtn"); if(lb) lb.onclick = () => confirmSheet("Leave this team?", "You'll no longer see this child's log. A lead carer can invite you again.", "Leave", () => removeMember(me));
   const showInvite = () => {
     if(!lastInvite || lastInvite.cid !== curChild.id || !$("#invOut")) return;
@@ -2292,7 +2312,7 @@ $("#obEmailBtn").onclick = async () => {
 $("#obStart").onclick = () => { hideOnboarding(); if(!backend) useLocal(); $("#startBtn").click(); };
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.22-34";
+const APP_VERSION="2026.11.22-35";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
