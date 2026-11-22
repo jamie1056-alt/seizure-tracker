@@ -1,6 +1,6 @@
 {
   "name": "Seizure Tracker",
-  "short_name": "Seizures",
+  "short_name": "Seizure Tracker",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
