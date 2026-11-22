@@ -486,6 +486,7 @@ html[data-theme="light"] body:not(.emergency) .tile{box-shadow:0 1px 2px rgba(21
 .pact button{padding:8px 11px}
 .big-start.viewonly{filter:grayscale(1);opacity:.5}
 html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(21,32,58,.05),0 6px 20px rgba(21,32,58,.06)}
+#title .tsub{display:block;font-size:.62em;font-weight:600;color:var(--muted);letter-spacing:.01em;margin-top:1px}
 </style>
 </head>
 <body>
@@ -980,7 +981,7 @@ document.querySelectorAll(".tile[data-go]").forEach(t=>t.onclick=()=>{
   else if(g==="logpast"){ $("#addPastBtn").click(); }
 });
 function render(){
-  $("#title").textContent = settings.name ? `${settings.name} Seizure Log` : "Seizure Tracker";
+  $("#title").innerHTML = settings.name ? `${esc(settings.name)}<span class="tsub">Seizure Log</span>` : "Seizure Tracker";
   const w7=within(7), w30=within(30), all=sorted();
   $("#s30").textContent=w30.length;
   const st=streaks(); $("#sFree").textContent = st.current==null ? "–" : st.current; $("#sBest").textContent = st.best==null ? "–" : st.best;
