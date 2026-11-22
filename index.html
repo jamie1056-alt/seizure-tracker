@@ -1653,10 +1653,21 @@ function buildPdf(daysArg){
   const rect=(x,yy,w,h,fill)=>ops.push(`${rgb(fill)} rg ${x.toFixed(2)} ${(H-yy-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
   const line=(x1,y1,x2,y2,color="#d9dcef",wd=0.6)=>ops.push(`${rgb(color)} RG ${wd} w ${x1.toFixed(2)} ${(H-y1).toFixed(2)} m ${x2.toFixed(2)} ${(H-y2).toFixed(2)} l S`);
   const PURPLE="#5b3fd8", MUTED="#5d6385", SHADE="#f3f1fd";
+  const logo=(x0,y0,sz)=>{ const k=sz/512, X=v=>(x0+v*k).toFixed(2), Y=v=>(H-(y0+v*k)).toFixed(2), r=96, c=0.5523;
+    // white rounded tile
+    ops.push(`1 1 1 rg ${X(r)} ${Y(0)} m ${X(512-r)} ${Y(0)} l ${X(512-r+r*c)} ${Y(0)} ${X(512)} ${Y(r-r*c)} ${X(512)} ${Y(r)} c ${X(512)} ${Y(512-r)} l ${X(512)} ${Y(512-r+r*c)} ${X(512-r+r*c)} ${Y(512)} ${X(512-r)} ${Y(512)} c ${X(r)} ${Y(512)} l ${X(r-r*c)} ${Y(512)} ${X(0)} ${Y(512-r+r*c)} ${X(0)} ${Y(512-r)} c ${X(0)} ${Y(r)} l ${X(0)} ${Y(r-r*c)} ${X(r-r*c)} ${Y(0)} ${X(r)} ${Y(0)} c f`);
+    const P=rgb(PURPLE), cx=256, cy=282, R=122, d=R*c;
+    ops.push(`${P} rg ${X(226)} ${Y(130)} ${(60*k).toFixed(2)} ${(26*k).toFixed(2)} re f`);
+    ops.push(`${P} RG 1 J 1 j ${(22*k).toFixed(2)} w ${X(256)} ${Y(130)} m ${X(256)} ${Y(150)} l S`);
+    ops.push(`${(20*k).toFixed(2)} w ${X(352)} ${Y(168)} m ${X(372)} ${Y(148)} l S`);
+    ops.push(`${(24*k).toFixed(2)} w ${X(cx+R)} ${Y(cy)} m ${X(cx+R)} ${Y(cy+d)} ${X(cx+d)} ${Y(cy+R)} ${X(cx)} ${Y(cy+R)} c ${X(cx-d)} ${Y(cy+R)} ${X(cx-R)} ${Y(cy+d)} ${X(cx-R)} ${Y(cy)} c ${X(cx-R)} ${Y(cy-d)} ${X(cx-d)} ${Y(cy-R)} ${X(cx)} ${Y(cy-R)} c ${X(cx+d)} ${Y(cy-R)} ${X(cx+R)} ${Y(cy-d)} ${X(cx+R)} ${Y(cy)} c S`);
+    const pts=[[170,286],[214,286],[234,242],[262,330],[284,262],[300,286],[342,286]];
+    ops.push(`${(18*k).toFixed(2)} w ${pts.map((p,i)=>`${X(p[0])} ${Y(p[1])} ${i?"l":"m"}`).join(" ")} S 0 J 0 j`); };
+  const brand=(yMid,sz,fs)=>{ const lx=W-M-sz; logo(lx,yMid-sz/2,sz); const t="Seizure Tracker"; text(t,lx-10-pdfWidth(t,fs,true),yMid+fs*0.35,fs,{bold:true,color:"#ffffff"}); };
   const newPage=(first)=>{ if(ops.length) pages.push(ops); ops=[];
     if(first){ rect(0,0,W,92,PURPLE); text("Seizure report",M,44,22,{bold:true,color:"#ffffff"});
-      text(`${settings.name||"Child"}  ·  ${periodLabel(days).replace(/^./,c=>c.toUpperCase())}, to ${fmtDate(Date.now())}`,M,70,11,{color:"#e6e0ff"}); y=118; }
-    else { rect(0,0,W,30,PURPLE); text(`Seizure report – ${settings.name||"Child"} (continued)`,M,20,10,{bold:true,color:"#ffffff"}); y=56; } };
+      text(`${settings.name||"Child"}  ·  ${periodLabel(days).replace(/^./,c=>c.toUpperCase())}, to ${fmtDate(Date.now())}`,M,70,11,{color:"#e6e0ff"}); brand(46,46,13); y=118; }
+    else { rect(0,0,W,30,PURPLE); text(`Seizure report – ${settings.name||"Child"} (continued)`,M,20,10,{bold:true,color:"#ffffff"}); brand(15,20,9); y=56; } };
   const need=h=>{ if(y+h>H-50) newPage(false); };
   const heading=t=>{ need(40); text(t.toUpperCase(),M,y,10,{bold:true,color:PURPLE}); y+=8; line(M,y,M+CW,y,PURPLE,1); y+=8; };
   newPage(true);
