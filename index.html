@@ -492,6 +492,27 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 .discbox{background:#fff1f1;border:2px solid #e5484d;color:#1b2140;border-radius:14px;padding:12px 14px;margin:6px 0 12px}
 .discbox b.t{display:block;color:#c0282e;font-size:15px;margin-bottom:4px}
 .row.fields{align-items:flex-end}.row.fields label{white-space:nowrap}
+/* night mode for the timer and recovery screens */
+#timer.night,#recov.night{background:#000!important;animation:none!important;color:#ff6b5e}
+#timer.night.alarm{background:#260000!important}
+#timer.night *,#recov.night *{color:#ff6b5e!important;border-color:#4a120e!important}
+#timer.night button,#timer.night .call,#timer.night .opLink,#recov.night button,#recov.night .callmini,#timer.night #alertBox,#timer.night #vnsBox,#timer.night #stepBox,#timer.night #nextStep,#timer.night #planBox,#timer.night #clusterBox,#recov.night #rCheck{background:#140403!important;box-shadow:none!important}
+#timer.night #stopBtn{background:#3a0a08!important;color:#ff6b5e!important}
+#timer.night #clock,#recov.night #rClock{color:#ff3b30!important;text-shadow:none!important}
+#timer.night svg,#recov.night svg,#timer.night img,#recov.night img{filter:grayscale(1) sepia(1) saturate(6) hue-rotate(-40deg) brightness(.75)}
+#nightBtn,#rNightBtn{background:none;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:13px;color:inherit;margin-left:8px;min-height:0}
+#rAgain{background:#e5484d;color:#fff;border:0}
+.hnote{padding:10px 0;border-top:1px solid var(--line)}.hnote:first-child{border-top:0}
+.hnote .who{color:var(--muted);font-size:12.5px;margin-top:3px}
+.hnote .txt{white-space:pre-wrap;font-size:15px}
+.appt{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}.appt:first-child{border-top:0}
+.appt .d{font-weight:600}.appt .w{color:var(--muted);font-size:13px}.appt .tag{font-size:12px;border-radius:999px;padding:2px 8px;background:var(--panel2);align-self:center;white-space:nowrap}
+.appt .tag.up{background:#e7f1fb;color:#1d4f91}
+.pill.zz{background:#ece9fb;color:#4b2aa8}.pill.cl{background:#fdeceb;color:#a3262b}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--text);text-align:left;line-height:1.4;margin:2px 0 4px}
+.consent input{width:22px!important;height:22px;flex:none;margin-top:1px}
+.consent a{color:var(--accent);font-weight:600}
+.consent.shake{animation:shake .4s}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 </style>
 </head>
 <body>
@@ -525,6 +546,11 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
         <div class="stat"><span class="k-ic"><span class="em">💊</span></span><b id="sRescue">0</b><span>rescue meds (30d)</span></div>
       </div>
     </div>
+    <div class="card" id="notesCard" style="--acc:#9b80f6">
+      <h2>Handover notes</h2>
+      <div id="notesList"></div>
+      <div class="row" style="margin-top:10px"><button class="primary" id="noteAdd"><span class="em">✏️</span> Add a note</button><button id="noteAll">All notes</button></div>
+    </div>
     <div class="card">
       <h2>Manage</h2>
       <div class="tiles">
@@ -556,8 +582,16 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
       <div id="typeChart"></div>
       <div class="subhead" style="margin-top:14px">Seizures per month</div>
       <div id="monthChart"></div>
+      <div class="subhead" style="margin-top:14px">Awake or asleep</div>
+      <div id="sleepChart"></div>
       <div class="subhead" style="margin-top:14px">Possible triggers noted</div>
       <div id="trigChart"></div>
+    </div>
+    <div class="card" id="apptCard" style="--acc:#2bb3a3">
+      <h2>Appointments</h2>
+      <p style="margin:0 0 8px;font-size:14px;color:var(--muted)">Note your questions before an appointment, take a report pack with you, and record what was agreed.</p>
+      <div id="apptList"></div>
+      <button class="primary" id="apptAdd" style="width:100%;margin-top:10px"><span class="em">📅</span> Prepare for an appointment</button>
     </div>
     <div class="card" style="--acc:#ffb37a">
       <h2>Share with the doctor</h2>
@@ -594,6 +628,8 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
       <h2>Settings</h2>
       <label for="setTheme">Appearance (this phone)</label>
       <select id="setTheme"><option value="auto">Automatic – follows the phone</option><option value="light">Light</option><option value="dark">Dark</option></select>
+      <label for="setNight">Timer screen at night (this phone)</label>
+      <select id="setNight"><option value="auto">Automatic – dim red from 9pm to 7am</option><option value="on">Always dim red</option><option value="off">Never</option></select>
       <label for="setName">Child's name (optional)</label>
       <input id="setName" placeholder="Shown in the app title">
       <label for="setAge">Child's age or date of birth (for the 999 operator)</label>
@@ -696,7 +732,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 
 <!-- TIMER -->
 <div id="timer" class="hidden">
-  <div class="top"><span id="tStarted">Started –</span><span id="tAlarmAt">Alarm at 18:00</span></div>
+  <div class="top"><span id="tStarted">Started –</span><span><span id="tAlarmAt">Alarm at 18:00</span><button id="nightBtn" aria-label="Night mode">🌙 Night</button></span></div>
   <div id="clusterBox" class="hidden"></div>
   <div id="mid">
     <div id="clock">0:00</div>
@@ -730,13 +766,14 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 </div>
 
 <div id="recov" class="hidden">
-  <div class="top"><span id="rEnded">Seizure ended –</span><span id="rLasted"></span></div>
+  <div class="top"><span id="rEnded">Seizure ended –</span><span><span id="rLasted"></span><button id="rNightBtn" aria-label="Night mode">🌙 Night</button></span></div>
   <div class="lbl">Recovery time</div>
   <div id="rClock">0:00</div>
   <div id="rSub">Stay with them until they're back to their normal self.</div>
   <div id="rCheck"></div>
   <div id="rLog"></div>
   <div class="acts">
+    <button id="rAgain"><span class="em">⏱</span> Another seizure has started</button>
     <button id="rDone"><span class="em">✓</span> Back to normal</button>
     <div class="row"><button id="rPos"><span class="em">🛌</span> Recovery position</button><button id="rSkip">Add details now</button></div>
   </div>
@@ -754,6 +791,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
     <div class="obcard">
       <b>Sign in to back up and share</b>
       <small>One shared log for family, carers and school. Logs are stored securely by Google in London, UK.</small>
+      <label class="consent"><input type="checkbox" id="obConsent"><span>I've read the <a href="guide/privacy.html" target="_blank" rel="noopener">privacy notice</a> and agree to my details, and the health information I enter, being stored as it describes.</span></label>
       <button class="primary" id="obGoogle">Continue with Google</button>
       <div id="obEmailForm"><input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="Or your email address"><button id="obEmailBtn">Email me a sign-in link</button></div>
       <div id="obEmailSent" class="note hidden">Check your email <b>on this phone</b> and tap the link to finish signing in.</div>
@@ -792,6 +830,7 @@ const ls = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse
              set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} },
              del(k){ try{ localStorage.removeItem(k); }catch{} } };
 
+const SLEEP_OPTS = ["Awake","Asleep","Just woken up"];
 const TYPE_DESC = {"Tonic-clonic":"Tonic-clonic (stiffens, then jerks; unconscious)","Focal (aware)":"Focal, aware (starts in one area; stays aware)","Focal (impaired awareness)":"Focal, impaired awareness (confused or unaware; may fiddle or wander)","Absence":"Absence (brief blank stare, a few seconds)","Myoclonic":"Myoclonic (sudden brief jerks, often arms)","Atonic (drop)":"Atonic (suddenly goes floppy; may drop or fall)","Tonic":"Tonic (body suddenly stiffens)","Unsure / other":"Unsure / other (not sure, or doesn't fit)"};
 const TYPES = ["Tonic-clonic","Focal (aware)","Focal (impaired awareness)","Absence","Myoclonic","Atonic (drop)","Tonic","Unsure / other"];
 const TRIGGERS = ["Tired / poor sleep","Missed medication","Unwell / fever","Stress / excitement","Too hot","Flashing lights","Skipped meal","Hormonal","None obvious"];
@@ -828,7 +867,7 @@ function migrate(){ // one-off: older saved settings used a 5-minute default
   if(settings.cfgV===2){ settings.cfgV=3; changed=true; }
   return changed; }
 function loadLocal(){ seizures = ls.get(LOCAL_KEY, []); const saved=ls.get(LOCAL_SET, null); settings = Object.assign({...DEFAULTS}, saved||{}); if(!saved) settings.cfgV=3; if(migrate()) ls.set(LOCAL_SET,settings); }
-function cleanRec(r){ const o={}; for(const k of ["id","by","byName","demo","clusterNo","actions","severity","start","durationSec","type","triggers","signs","rescueMed","rescueAtSec","videos","vns","vnsCount","vnsAtSec","recoveryMin","notes","events"]) if(r[k]!==undefined) o[k]=r[k]; return o; }
+function cleanRec(r){ const o={}; for(const k of ["id","by","byName","demo","clusterNo","actions","severity","start","durationSec","type","triggers","signs","rescueMed","rescueAtSec","videos","vns","vnsCount","vnsAtSec","recoveryMin","notes","events","sleep","wokeAt","clusterId"]) if(r[k]!==undefined) o[k]=r[k]; return o; }
 
 async function saveSeizure(rec){
   rec = cleanRec(rec);
@@ -933,7 +972,7 @@ function sorted(){ return [...seizures].sort((a,b)=>b.start-a.start); }
 function within(days){ const t=Date.now()-days*86400000; return seizures.filter(s=>s.start>=t); }
 function itemHTML(s,inDay){
   const alarmSec=(settings.alertMin||18)*60;
-  const pills=[(s.vns?`<span class="pill vns">${I("⚡")}VNS${s.vnsCount>1?" ×"+s.vnsCount:""}</span>`:""),(s.rescueMed?`<span class="pill med">${I("💊")}Rescue med</span>`:""),((s.videos||[]).length?`<span class="pill vid">${I("🎥")}Video</span>`:"")].join("");
+  const pills=[(s.vns?`<span class="pill vns">${I("⚡")}VNS${s.vnsCount>1?" ×"+s.vnsCount:""}</span>`:""),(s.rescueMed?`<span class="pill med">${I("💊")}Rescue med</span>`:""),((s.videos||[]).length?`<span class="pill vid">${I("🎥")}Video</span>`:""),(s.sleep&&s.sleep!=="Awake"?`<span class="pill zz">${esc(s.sleep)}</span>`:""),(s.clusterId?`<span class="pill cl">Cluster</span>`:"")].join("");
   const bits=[(s.triggers||[]).filter(t=>t!=="None obvious").join(", ")].filter(Boolean).join(" · ");
   const sev = s.severity ? `<span class="sev" title="Severity ${s.severity} of 5">${"●".repeat(s.severity)}<span class="off">${"●".repeat(5-s.severity)}</span></span>` : "";
   const vk=(s.videos||[]).length?s.videos[0].key:"";
@@ -1009,7 +1048,7 @@ function render(){
   $("#sVns").textContent = w30.filter(s=>s.vns).length;
 
   $("#recent").innerHTML = all.length ? timelineHTML(all.slice(0,5)) : `<div class="empty">No seizures logged yet.</div>`;
-  renderHistory(all);
+  renderHistory(all); if(typeof renderExtras === "function" && typeof notes !== "undefined") try{ renderExtras(); }catch{}
   renderChart(); renderPatterns(); renderBackupNag(); fillWho(); fillThumbs(); renderHello();
   try{ refreshMailLinks(); }catch{}
 }
@@ -1023,7 +1062,7 @@ function barsSVG(labels, vals, h=120){
 }
 function renderPatterns(){
   const yr=within(365);
-  if(!yr.length){ ["#todChart","#monthChart","#trigChart","#typeChart"].forEach(id=>$(id).innerHTML=`<div class="empty" style="padding:6px 0">Not enough data yet.</div>`); return; }
+  if(!yr.length){ ["#todChart","#monthChart","#trigChart","#typeChart","#sleepChart"].forEach(id=>$(id).innerHTML=`<div class="empty" style="padding:6px 0">Not enough data yet.</div>`); return; }
   const tod=[0,0,0,0,0,0,0,0]; yr.forEach(x=>tod[Math.floor(new Date(x.start).getHours()/3)]++);
   $("#todChart").innerHTML=barsSVG(["0–3","3–6","6–9","9–12","12–15","15–18","18–21","21–24"],tod);
   const now=new Date(), ms=[], lab=[];
@@ -1033,6 +1072,8 @@ function renderPatterns(){
   const ty={}; yr.forEach(x=>{ const k=x.type||"Not set"; ty[k]=(ty[k]||0)+1; });
   const tys=Object.entries(ty).sort((a,b)=>b[1]-a[1]), tmx=tys[0][1], ttot=yr.length;
   $("#typeChart").innerHTML = tys.map(([t,n])=>`<div class="hbar"><span><i class="tdot" style="background:${typeCol(t)}"></i>${esc(t)}</span><div class="b" style="width:${Math.max(6,100*n/tmx)}%;background:${typeCol(t)}"></div><span class="n">${n} · ${Math.round(100*n/ttot)}%</span></div>`).join("");
+  { const sl={}; yr.forEach(x=>{ if(x.sleep) sl[x.sleep]=(sl[x.sleep]||0)+1; }); const se=Object.entries(sl).sort((a,b)=>b[1]-a[1]), smx=se.length?se[0][1]:1;
+    $("#sleepChart").innerHTML = se.length ? se.map(([t,n])=>`<div class="hbar"><span>${esc(t)}</span><div class="b" style="width:${Math.max(6,100*n/smx)}%"></div><span class="n">${n}</span></div>`).join("") : `<div class="empty" style="padding:6px 0">Not recorded yet – choose "Awake or asleep?" in a seizure record.</div>`; }
   const tc={}; yr.forEach(x=>(x.triggers||[]).forEach(t=>{ if(t!=="None obvious") tc[t]=(tc[t]||0)+1; }));
   const top=Object.entries(tc).sort((a,b)=>b[1]-a[1]).slice(0,8), mx=top.length?top[0][1]:1;
   $("#trigChart").innerHTML = top.length ? top.map(([t,n])=>`<div class="hbar"><span>${esc(t)}</span><div class="b" style="width:${Math.max(6,100*n/mx)}%"></div><span class="n">${n}</span></div>`).join("") : `<div class="empty" style="padding:6px 0">No triggers recorded yet.</div>`;
@@ -1340,9 +1381,21 @@ $("#startBtn").onclick=()=>{
   active={ start:Date.now(), events:[], rescueAtSec:null, muted:false, alarmed:false };
   persistActive(); syncActive(); openTimer();
 };
+const LOCAL_NIGHT="st_night_v1";
+{ const sn=$("#setNight"); if(sn){ sn.value=ls.get(LOCAL_NIGHT,"auto"); sn.onchange=()=>{ ls.set(LOCAL_NIGHT, sn.value); toast("Saved for this phone"); }; } }
+function nightPref(){ return ls.get(LOCAL_NIGHT,"auto"); }
+function nightOn(){ const p=nightPref(), h=new Date().getHours(); return p==="on" || (p==="auto" && (h>=21 || h<7)); }
+function applyNight(){
+  const t=!!(active && (active.night ?? nightOn())), r=!!(recov && (recov.night ?? (active?false:nightOn())));
+  $("#timer").classList.toggle("night", t); $("#recov").classList.toggle("night", recov ? r : t);
+  $("#nightBtn").textContent = t ? "☀️ Day" : "🌙 Night"; $("#rNightBtn").textContent = $("#recov").classList.contains("night") ? "☀️ Day" : "🌙 Night";
+}
+$("#nightBtn").onclick=e=>{ e.stopPropagation(); if(!active) return; active.night=!(active.night ?? nightOn()); persistActive(); applyNight(); };
+$("#rNightBtn").onclick=e=>{ e.stopPropagation(); if(!recov) return; recov.night=!$("#recov").classList.contains("night"); ls.set(LOCAL_RECOV,recov); applyNight(); };
 function openTimer(){
   setTimeout(setEmergency,0);
-  $("#timer").classList.remove("hidden","amber","alarm");
+  if(active && active.night===undefined){ active.night=nightOn(); persistActive(); }
+  $("#timer").classList.remove("hidden","amber","alarm"); applyNight();
   $("#tStarted").textContent="Started "+fmtTime(active.start);
   const am=settings.alertMin||18; $("#tAlarmAt").textContent=`Alarm at ${am}:00`;
   if(settings.plan){ $("#planBox").textContent=settings.plan; $("#planBox").classList.remove("hidden"); } else $("#planBox").classList.add("hidden");
@@ -1476,11 +1529,12 @@ $("#stopBtn").onclick=async()=>{
   const rec={ id:uid(), start:active.start, durationSec:dur, type:"", triggers:[], signs:[],
               rescueMed:active.rescueAtSec!=null, rescueAtSec:active.rescueAtSec, vns:!!(active.vnsAtSec&&active.vnsAtSec.length), vnsCount:(active.vnsAtSec||[]).length, vnsAtSec:active.vnsAtSec||[], recoveryMin:null, notes:"", events:active.events||[], videos:(active.videos||[]).map(v=>({key:v.key,offsetSec:v.offsetSec,durationSec:v.durationSec,type:v.type})) };
   const unsaved=cam.unsaved||{}; cam.unsaved={};
-  rec.by=me||undefined; rec.clusterNo=active.clusterNo;
+  rec.by=me||undefined; rec.clusterNo=active.clusterNo; if(active.clusterId) rec.clusterId=active.clusterId;
   { const a=autoFromEvents(rec.events); rec.signs=a.signs; rec.actions=a.actions; if(a.notes) rec.notes=a.notes; }
+  const wasNight=!!active.night;
   closeTimer(); active=null; ls.del(LOCAL_ACTIVE); syncActive();
   saveSeizure(rec);
-  startRecovery(rec);
+  startRecovery(rec, wasNight);
   for(const [k,b] of Object.entries(unsaved)){ const i=rec.videos.findIndex(v=>v.key===k); if(i>=0) saveFile(`seizure-clip${i+1}.${vidExt(b.type)}`, b, b.type); }
 };
 function closeTimer(){ setTimeout(setEmergency,0); if(cam.rec) stopRec(); else closeCam(); clearInterval(tick); stopAlarm(); stopVnsBeep(); $("#vnsBox").className="hidden"; keepAwake(false); $("#timer").classList.add("hidden"); $("#clockSub").textContent=CALM; }
@@ -1518,10 +1572,10 @@ $("#passDl").onclick=async()=>{ const ok=await saveFile(`seizure-passport${setti
 
 // ---------- recovery timer ----------
 const LOCAL_RECOV="st_recov_v1"; let recov=null, rTick=null;
-function startRecovery(rec){ recov={id:rec.id, endAt:rec.start+rec.durationSec*1000, lasted:rec.durationSec, checks:[], lastCheck:Date.now()}; ls.set(LOCAL_RECOV,recov); openRecovery(); }
+function startRecovery(rec, night){ recov={id:rec.id, endAt:rec.start+rec.durationSec*1000, lasted:rec.durationSec, checks:[], lastCheck:Date.now(), night: night ?? nightOn()}; ls.set(LOCAL_RECOV,recov); openRecovery(); }
 function openRecovery(){
   setTimeout(setEmergency,0);
-  $("#recov").classList.remove("hidden"); keepAwake(true);
+  $("#recov").classList.remove("hidden"); keepAwake(true); applyNight();
   $("#rEnded").textContent="Seizure ended "+fmtTime(recov.endAt); $("#rLasted").textContent="Lasted "+fmtDur(recov.lasted);
   clearInterval(rTick); rTick=setInterval(updRecov,500); updRecov(); renderRecLog();
 }
@@ -1553,6 +1607,16 @@ function finishRecovery(backToNormal){
 }
 function recElapsedAt(r){ return (Date.now()-r.endAt)/1000; }
 $("#rDone").onclick=()=>finishRecovery(true);
+$("#rAgain").onclick=()=>{
+  const r=recov; if(!r) return;
+  unlockAudio();
+  clearInterval(rTick); recov=null; ls.del(LOCAL_RECOV); $("#recov").classList.add("hidden");
+  const cur=seizures.find(x=>x.id===r.id), cid=(cur&&cur.clusterId)||r.id;
+  if(cur){ const gap=Math.round(recElapsedAt(r));
+    saveSeizure({...cur, clusterId:cid, events:[...(cur.events||[]), ...r.checks.map(c=>({at:cur.durationSec+c,label:`Recovery check +${fmtDur(c)}: breathing OK`})), {at:cur.durationSec+gap, label:`Another seizure started ${fmtDur(gap)} after this one ended`}]}); }
+  active={ start:Date.now(), events:[], rescueAtSec:null, muted:false, alarmed:false, clusterId:cid, night:nightOn("timer") };
+  persistActive(); syncActive(); openTimer(); toast("New timer started – linked as a cluster");
+};
 $("#rSkip").onclick=()=>finishRecovery(false);
 $("#rPos").onclick=()=>openRecovery_pos();
 function openRecovery_pos(){ openRecovery_guide(); }
@@ -1580,6 +1644,9 @@ function openForm(rec, justEnded){
    <div class="row"><input type="number" id="fMin" min="0" value="${m}" inputmode="numeric"><input type="number" id="fSec" min="0" max="59" value="${s}" inputmode="numeric"></div>
    <label>Severity</label><div class="sevpick" id="fSev">${[1,2,3,4,5].map(n=>`<button type="button" class="${rec.severity===n?"on":""}" data-sev="${n}">${n}</button>`).join("")}<span class="sevhint">1 mild · 5 severe</span></div>
    <label>Type</label><select id="fType"><option value="">— choose —</option>${TYPES.map(t=>`<option value="${esc(t)}" ${t===rec.type?"selected":""}>${esc(TYPE_DESC[t]||t)}</option>`).join("")}</select>
+   <label>Awake or asleep?</label><div class="chips" id="fSleep">${SLEEP_OPTS.map(o=>`<button type="button" class="chip ${rec.sleep===o?"on":""}" data-sl="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+   <div id="fWakeRow" class="${rec.sleep&&rec.sleep!=="Awake"?"":"hidden"}"><label>Woke up at (if known)</label><input type="time" id="fWake" value="${esc(rec.wokeAt||"")}"></div>
+   ${rec.clusterId?`<div class="note" style="margin-top:10px">Part of a cluster – ${seizures.filter(x=>x.clusterId===rec.clusterId).length} seizures linked together.</div>`:""}
    <label>What you saw${justEnded&&(rec.signs||[]).length?` <span style="color:var(--accent);font-weight:600">· filled in from moments you marked</span>`:""}</label>${chipGroup("fSigns",SIGNS,rec.signs||[])}
    <label>Actions taken</label>${chipGroup("fActs",ACTIONS,rec.actions||[])}
    <label>Possible triggers</label>${chipGroup("fTrig",TRIGGERS,rec.triggers||[])}
@@ -1596,8 +1663,9 @@ function openForm(rec, justEnded){
    ${evs.length?`<label>Timeline</label><div style="font-size:14px;color:var(--muted)">${evs.map(e=>`${esc(fmtDur(e.at))} — ${esc(e.label)}`).join("<br>")}</div>`:""}
    <div class="dialog-btns">${isNew?`<button class="ghost" id="fCancel">Cancel</button>`:`<button class="danger" id="fDel">Delete</button>`}<button class="primary" id="fSave">Save</button></div>`);
   document.querySelectorAll("#fSigns .chip, #fActs .chip, #fTrig .chip").forEach(c=>c.onclick=()=>c.classList.toggle("on"));
+  document.querySelectorAll("#fSleep .chip").forEach(c=>c.onclick=()=>{ const was=c.classList.contains("on"); document.querySelectorAll("#fSleep .chip").forEach(x=>x.classList.remove("on")); if(!was) c.classList.add("on"); const v=was?"":c.dataset.sl; $("#fWakeRow").classList.toggle("hidden", !v || v==="Awake"); });
   if($("#fCancel")) $("#fCancel").onclick=hideSheet;
-  if(!canEditRec(rec)){ document.querySelectorAll("#sheet input,#sheet select,#sheet textarea,#fSev button,#fSigns .chip,#fActs .chip,#fTrig .chip").forEach(x=>x.disabled=true); const sv=$("#fSave"); if(sv) sv.classList.add("hidden"); const n=document.createElement("div"); n.className="note"; n.textContent= myRole==="logger" ? "You can only edit seizures you logged, within 24 hours." : "You have view-only access."; $("#sheet").insertBefore(n,$("#sheet").children[1]); }
+  if(!canEditRec(rec)){ document.querySelectorAll("#sheet input,#sheet select,#sheet textarea,#fSev button,#fSleep .chip,#fSigns .chip,#fActs .chip,#fTrig .chip").forEach(x=>x.disabled=true); const sv=$("#fSave"); if(sv) sv.classList.add("hidden"); const n=document.createElement("div"); n.className="note"; n.textContent= myRole==="logger" ? "You can only edit seizures you logged, within 24 hours." : "You have view-only access."; $("#sheet").insertBefore(n,$("#sheet").children[1]); }
   if(backend==="firebase" && !["owner","carer"].includes(myRole)){ const d=$("#fDel"); if(d) d.classList.add("hidden"); }
   document.querySelectorAll("#fSev button").forEach(b=>b.onclick=()=>{ const was=b.classList.contains("on"); document.querySelectorAll("#fSev button").forEach(x=>x.classList.remove("on")); if(!was) b.classList.add("on"); });
   if(rec.byName){ const el=$("#fBy"); if(el) el.textContent="Logged by "+rec.byName+(rec.demo?" (demo entry)":""); }
@@ -1618,7 +1686,7 @@ function openForm(rec, justEnded){
     if(mv){ const p=mv.split(":").map(Number); medAt = p.length===2 ? (p[0]||0)*60+(p[1]||0) : (p[0]||0)*60; }
     const recMin=$("#fRec").value===""?null:Math.max(0,parseInt($("#fRec").value)||0);
     const sevOn=document.querySelector("#fSev button.on");
-    saveSeizure({ ...rec, severity: sevOn?+sevOn.dataset.sev:null, start:isNaN(st)?rec.start:st, durationSec:dur, type:$("#fType").value,
+    saveSeizure({ ...rec, severity: sevOn?+sevOn.dataset.sev:null, start:isNaN(st)?rec.start:st, durationSec:dur, type:$("#fType").value, sleep:((document.querySelector("#fSleep .chip.on")||{}).dataset||{}).sl||"", wokeAt:(((document.querySelector("#fSleep .chip.on")||{}).dataset||{}).sl||"Awake")!=="Awake" ? ($("#fWake").value||"") : "",
       signs:readChips("fSigns"), actions:readChips("fActs"), triggers:readChips("fTrig"), vns:$("#fVns").value==="yes", vnsCount:$("#fVns").value==="yes"?Math.max(1,parseInt($("#fVnsN").value)||1):0, vnsAtSec:$("#fVns").value==="yes"?(rec.vnsAtSec||[]):[], rescueMed:$("#fMed").value==="yes",
       rescueAtSec:$("#fMed").value==="yes"?medAt:null, recoveryMin:recMin, notes:$("#fNotes").value.trim() });
     hideSheet(); toast("Saved");
@@ -1664,7 +1732,8 @@ function pdfWrap(text, size, bold, maxW){
     out.push(line); });
   return out.length?out:[""];
 }
-function buildPdf(daysArg){
+function buildPdf(daysArg, opts){
+  opts=opts||{};
   const days=daysArg===undefined?sumDays():daysArg, list=(days?within(days):[...seizures]).sort((a,b)=>b.start-a.start);
   const W=595.28, H=841.89, M=40, CW=W-2*M, pages=[]; let ops=[], y=0;
   const esc=t=>pdfEnc(t).replace(/[\\()]/g,m=>"\\"+m);
@@ -1685,7 +1754,7 @@ function buildPdf(daysArg){
     ops.push(`${(18*k).toFixed(2)} w ${pts.map((p,i)=>`${X(p[0])} ${Y(p[1])} ${i?"l":"m"}`).join(" ")} S 0 J 0 j`); };
   const brand=(yMid,sz,fs)=>{ const lx=W-M-sz; logo(lx,yMid-sz/2,sz); const t="Seizure Tracker"; text(t,lx-10-pdfWidth(t,fs,true),yMid+fs*0.35,fs,{bold:true,color:"#ffffff"}); };
   const newPage=(first)=>{ if(ops.length) pages.push(ops); ops=[];
-    if(first){ rect(0,0,W,92,PURPLE); text("Seizure report",M,44,22,{bold:true,color:"#ffffff"});
+    if(first){ rect(0,0,W,92,PURPLE); text(opts.appt?"Appointment pack":"Seizure report",M,44,22,{bold:true,color:"#ffffff"});
       text(`${settings.name||"Child"}  ·  ${periodLabel(days).replace(/^./,c=>c.toUpperCase())}, to ${fmtDate(Date.now())}`,M,70,11,{color:"#e6e0ff"}); brand(46,46,13); y=118; }
     else { rect(0,0,W,30,PURPLE); text(`Seizure report – ${settings.name||"Child"} (continued)`,M,20,10,{bold:true,color:"#ffffff"}); brand(15,20,9); y=56; } };
   const need=h=>{ if(y+h>H-50) newPage(false); };
@@ -1698,6 +1767,16 @@ function buildPdf(daysArg){
     need(h); if(i%2===0) rect(M,y,CW,h,SHADE);
     text(k,M+8,y+14,10,{bold:true,color:MUTED}); lines.forEach((l,j)=>text(l,M+180,y+14+j*13,10)); y+=h; });
   heading("Details"); kv(det); y+=18;
+  if(opts.appt){ const a=opts.appt;
+    heading("Appointment");
+    kv([["Date",`${fmtDate(a.date)} at ${fmtTime(a.date)}`],["With / where",a.clinician||"–"]]); y+=14;
+    const qs=(a.questions||[]).filter(Boolean);
+    if(qs.length){ need(30); text("Questions to ask",M,y+4,10.5,{bold:true}); y+=16;
+      qs.forEach((q,i)=>{ const ls2=pdfWrap(q,10,false,CW-24); need(ls2.length*13+6); text(`${i+1}.`,M+4,y+8,10,{bold:true,color:PURPLE}); ls2.forEach((l,j)=>text(l,M+22,y+8+j*13,10)); y+=ls2.length*13+6; }); y+=8; }
+    need(40); text(a.outcome?"What was said and agreed":"Notes from the appointment",M,y+4,10.5,{bold:true}); y+=14;
+    if(a.outcome){ pdfWrap(a.outcome,10,false,CW).forEach(l=>{ need(14); text(l,M,y+8,10); y+=13; }); y+=10; }
+    else { for(let i=0;i<6;i++){ need(24); y+=22; line(M,y,M+CW,y,"#c9c4ea",0.6); } y+=16; }
+  }
 
   // summary
   heading("Summary");
@@ -1711,6 +1790,8 @@ function buildPdf(daysArg){
     sumRows.push(["VNS magnet used",`${list.filter(s=>s.vns).length} of ${n} seizures`],["Rescue medication given",`${list.filter(s=>s.rescueMed).length} of ${n} seizures`]);
     const amb=list.filter(s=>(s.actions||[]).some(a=>/999|ambulance/i.test(a))).length; if(amb) sumRows.push(["999 / ambulance",`${amb} of ${n} seizures`]);
     const trig=cnt(list.flatMap(s=>s.triggers||[])); if(trig) sumRows.push(["Possible triggers",trig]);
+    const sl=cnt(list.map(s=>s.sleep).filter(Boolean)); if(sl) sumRows.push(["Awake or asleep",sl]);
+    const clN=new Set(list.filter(s=>s.clusterId).map(s=>s.clusterId)).size; if(clN) sumRows.push(["Clusters",`${clN} (${list.filter(s=>s.clusterId).length} seizures)`]);
   }
   kv(sumRows); y+=18;
 
@@ -1723,7 +1804,7 @@ function buildPdf(daysArg){
     list.forEach((s,i)=>{
       const vns=s.vns?`${s.vnsCount>1?s.vnsCount+" swipes":"1 swipe"}${(s.vnsAtSec||[]).length?" at "+s.vnsAtSec.map(fmtDur).join(", "):""}`:"No";
       const med=s.rescueMed?`Yes${s.rescueAtSec!=null?" at "+fmtDur(s.rescueAtSec):""}`:"No";
-      const det=[(s.signs||[]).length?"Seen: "+s.signs.join(", "):"",(s.actions||[]).length?"Actions: "+s.actions.join(", "):"",
+      const det=[s.sleep?`${s.sleep}${s.wokeAt?` (woke ${s.wokeAt})`:""}`:"", s.clusterId?"Part of a cluster":"", (s.signs||[]).length?"Seen: "+s.signs.join(", "):"",(s.actions||[]).length?"Actions: "+s.actions.join(", "):"",
         (s.triggers||[]).length?"Triggers: "+s.triggers.join(", "):"", s.recoveryMin?`Recovery: ${s.recoveryMin} min`:"",
         s.notes?"Notes: "+s.notes:"", (s.videos||[]).length?`Video: ${s.videos.length} clip${s.videos.length>1?"s":""} (on request)`:""].filter(Boolean).join("\n")||"–";
       const cells=[`${new Date(s.start).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}\n${fmtTime(s.start)}`, fmtDur(s.durationSec), s.type||"–", s.severity?String(s.severity):"–", vns, med, det];
@@ -1759,6 +1840,7 @@ function buildPdf(daysArg){
   const bytes=new Uint8Array(out.length); for(let i=0;i<out.length;i++) bytes[i]=out.charCodeAt(i)&255;
   return bytes;
 }
+function packName(a){ return `appointment-pack-${(settings.name||"child").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"child"}-${new Date(a.date).toISOString().slice(0,10)}.pdf`; }
 function pdfName(){ return `seizure-report-${(settings.name||"child").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"child"}-${today()}.pdf`; }
 
 function sumDays(){ const v=parseInt($("#sumDays").value); return isNaN(v)?90:v; }
@@ -1780,12 +1862,16 @@ function summaryText(daysArg){
     const tc={}; list.forEach(s=>(s.triggers||[]).forEach(t=>tc[t]=(tc[t]||0)+1));
     const tt=Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${t} (${n})`).join(", ");
     if(tt) L.push(`• Possible triggers: ${tt}`);
+    const asl=list.filter(s=>s.sleep&&s.sleep!=="Awake").length; if(asl) L.push(`• Asleep or just woken: ${times(asl)}`);
+    const ncl=new Set(list.filter(s=>s.clusterId).map(s=>s.clusterId)).size; if(ncl) L.push(`• Clusters: ${ncl}`);
     L.push("", rule, "EACH SEIZURE (newest first)", "Times in brackets are from the start of the seizure.", rule);
     list.forEach((s,i)=>{
       L.push("", `${i+1}.  ${fmtDate(s.start)} at ${fmtTime(s.start)}`);
       L.push(`• Length: ${longDur(s.durationSec)}`);
       if(s.type) L.push(`• Type: ${s.type}`);
       if(s.severity) L.push(`• Severity: ${s.severity} out of 5`);
+      if(s.sleep) L.push(`• Awake or asleep: ${s.sleep}${s.wokeAt?` (woke at ${s.wokeAt})`:""}`);
+      if(s.clusterId) L.push(`• Part of a cluster`);
       if(s.vns){ const n=s.vnsCount||1, at=(s.vnsAtSec||[]).map(fmtDur).join(", "); L.push(`• VNS magnet: ${n===1?"1 swipe":n+" swipes"}${at?" ("+at+")":""}`); }
       if(s.rescueMed) L.push(`• Rescue medication: given${s.rescueAtSec!=null?" ("+fmtDur(s.rescueAtSec)+")":""}`);
       if((s.signs||[]).length) L.push(`• Seen: ${s.signs.join(", ")}`);
@@ -1973,7 +2059,7 @@ async function initStandalone(){
 function useLocal(){
   backend = "local"; mode = "local"; ls.set(LOCAL_MODE, "local");
   const st = $("#syncState"); st.textContent = "Saved on this phone only"; st.classList.remove("ok");
-  applyRoleUI(); renderAccount(); renderShareInfo(); renderChildSwitch();
+  applyRoleUI(); renderAccount(); renderShareInfo(); renderChildSwitch(); xLoadLocal();
 }
 async function startFirebase(){
   backend = "firebase"; mode = "cloud"; ls.set(LOCAL_MODE, "firebase");
@@ -1985,13 +2071,32 @@ async function startFirebase(){
   F.onAuthStateChanged(fbAuth, u => { onAuth(u); });
 }
 let authBusy = false;
+const PRIVACY_V = 1, LOCAL_CONSENT = "st_consent_pending";
+function askConsent(){
+  return new Promise(res => {
+    showSheet(`<h3>Privacy notice</h3><p style="color:var(--muted);margin:4px 0 10px">Before your account is used, please read how Seizure Tracker stores and protects information.</p>
+      <a class="btnlink" href="guide/privacy.html" target="_blank" rel="noopener" style="display:flex;background:var(--panel2);color:var(--text);margin-bottom:12px">${I("📄")} Read the privacy notice</a>
+      <label class="consent"><input type="checkbox" id="pcTick"><span>I agree to my details, and the health information I enter, being stored as the privacy notice describes.</span></label>
+      <div class="dialog-btns"><button class="ghost" id="pcNo">Not now – sign out</button><button class="primary" id="pcYes">Continue</button></div>`);
+    $("#pcNo").onclick = () => { hideSheet(); res(false); };
+    $("#pcYes").onclick = () => { if(!$("#pcTick").checked){ toast("Please tick to agree first"); return; } hideSheet(); res(true); };
+  });
+}
 async function onAuth(u){
   if(u && fbUser && fbUser.uid === u.uid && (authBusy || me === u.uid)) return;   // same person reported twice
   fbUser = u;
   if(!u){ me = null; stopWatching(); renderAccount(); showOnboarding(true); return; }
   me = u.uid; hideOnboarding(); authBusy = true;
   let name = u.displayName || "";
-  try{ const ud = await withTimeout(F.getDoc(F.doc(fdb, "users", u.uid)), 6000); if(ud.exists() && ud.data().name) name = ud.data().name; }catch{}
+  let pv = null;
+  try{ const ud = await withTimeout(F.getDoc(F.doc(fdb, "users", u.uid)), 6000); if(ud.exists()){ if(ud.data().name) name = ud.data().name; pv = ud.data().privacyV || 0; } else pv = 0; }catch{}
+  if(pv !== null && pv < PRIVACY_V && !active){
+    const pend = ls.get(LOCAL_CONSENT, 0);
+    const ok = (Date.now() - pend < 3*3600e3) || await askConsent();
+    ls.del(LOCAL_CONSENT);
+    if(!ok){ authBusy = false; toast("Signed out – you can keep using the app on this phone only"); try{ await F.signOut(fbAuth); }catch{} ls.set(LOCAL_MODE, "local"); setTimeout(() => location.reload(), 1200); return; }
+    F.setDoc(F.doc(fdb, "users", u.uid), {privacyV: PRIVACY_V, privacyAt: F.serverTimestamp()}, {merge: true}).catch(()=>{});
+  }
   if(!name){
     name = await askText("Your name", "This is how other carers will see you in the log.", "text");
     name = (name || "").trim() || (u.email || "Carer").split("@")[0];
@@ -2011,7 +2116,7 @@ function watchChildren(){
   const q = F.query(F.collection(fdb, "children"), F.where(`roles.${me}`, "in", ROLES));
   unsubKids = F.onSnapshot(q, snap => {
     myChildren = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.name||"").localeCompare(b.name||""));
-    if(!myChildren.length){ if(unsubSeiz){ unsubSeiz(); unsubSeiz = null; } curChild = null; myRole = null; renderAccount(); renderChildSwitch(); if(!ls.get(LOCAL_JOIN,null)) showChildSetup(); return; }
+    if(!myChildren.length){ if(unsubSeiz){ unsubSeiz(); unsubSeiz = null; } stopExtras(); notes = []; appts = []; renderExtras(); curChild = null; myRole = null; renderAccount(); renderChildSwitch(); if(!ls.get(LOCAL_JOIN,null)) showChildSetup(); return; }
     const want = ls.get(LOCAL_CHILD, null);
     const pick = myChildren.find(c => curChild && c.id === curChild.id) || myChildren.find(c => c.id === want) || myChildren[0];
     applyChild(pick);
@@ -2025,7 +2130,7 @@ function applyChild(c){
   settings = Object.assign({...DEFAULTS}, c.settings || {}, {name: c.name || "", cfgV: 3});
   LOCAL_KEY = "st_cloud_" + c.id; LOCAL_SET = "st_cloudset_" + c.id; ls.set(LOCAL_SET, settings);
   colRef = seizureCol(c.id); settingsRef = childSettingsRef(c.id); activeRef = null;
-  if(changed){ seizures = ls.get(LOCAL_KEY, []); subscribeSeizures(c.id); }
+  if(changed){ seizures = ls.get(LOCAL_KEY, []); subscribeSeizures(c.id); subscribeExtras(c.id); }
   if(settingsChanged){ const ae = document.activeElement; if(!ae || !$("#view-settings").contains(ae)) fillSettings(); }
   applyRoleUI(); renderChildSwitch(); renderAccount(); renderShareInfo(); render();
 }
@@ -2081,7 +2186,7 @@ async function createChild(name, age, copyLocal){
   const base = copyLocal ? ls.get("st_settings_v1", {}) : {};
   const s = Object.assign({...DEFAULTS}, base, {age: age || base.age || ""}); delete s.name;
   ls.set(LOCAL_CHILD, ref.id);
-  F.setDoc(ref, {name: name.trim(), createdBy: me, createdAt: F.serverTimestamp(), roles: {[me]: "owner"}, memberNames: {[me]: myName}, settings: cleanForFs(s)}).catch(e => handleDbErr(e, "child"));
+  F.setDoc(ref, {name: name.trim(), createdBy: me, createdAt: F.serverTimestamp(), roles: {[me]: "owner"}, memberNames: {[me]: myName}, settings: cleanForFs(s), consent: {by: me, byName: myName, at: Date.now(), privacyV: PRIVACY_V}}).catch(e => handleDbErr(e, "child"));
   if(copyLocal){
     const local = ls.get("st_seizures_v1", []);
     local.forEach(r => F.setDoc(F.doc(fdb, "children", ref.id, "seizures", r.id), Object.assign(stripLocal(r), {by: me, byName: myName, createdAt: F.serverTimestamp(), updatedBy: me, updatedAt: F.serverTimestamp()})).catch(()=>{}));
@@ -2158,9 +2263,11 @@ function showChildSetup(){
     <label>Child's name</label><input id="csName" autocomplete="off">
     <label>Age or date of birth (optional)</label><input id="csAge" autocomplete="off" placeholder="e.g. 9, or 14/03/2017">
     ${localN ? `<label style="display:flex;gap:10px;align-items:center;color:var(--text);margin-top:14px"><input type="checkbox" id="csCopy" checked style="width:auto"> Copy the ${localN} seizure${localN==1?"":"s"} and care plan already saved on this phone</label>` : ""}
+    <label class="consent" style="margin-top:14px"><input type="checkbox" id="csConsent"><span>I'm this child's parent or guardian, or have their permission, and agree to their health information being stored and shared with the people I invite, as described in the <a href="guide/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
     <div class="note" style="margin-top:12px">Been invited by someone else? Open the invite link they sent you instead.</div>
     <div class="dialog-btns"><button class="primary" id="csGo">Create</button></div>`);
-  $("#csGo").onclick = async () => { const n = $("#csName").value.trim(); if(!n){ $("#csName").focus(); return; } const age = $("#csAge").value.trim(), c = $("#csCopy"), copy = !!(c && c.checked); hideSheet(); await createChild(n, age, copy); toast(`${n} is set up`); };
+  $("#csGo").onclick = async () => { const n = $("#csName").value.trim(); if(!n){ $("#csName").focus(); return; }
+    if(!$("#csConsent").checked){ toast("Please tick to confirm consent first"); const l=$("#csConsent").closest("label"); l.classList.remove("shake"); void l.offsetWidth; l.classList.add("shake"); return; } const age = $("#csAge").value.trim(), c = $("#csCopy"), copy = !!(c && c.checked); hideSheet(); await createChild(n, age, copy); toast(`${n} is set up`); };
 }
 function sheetOpen(){ return !$("#modal").classList.contains("hidden"); }
 
@@ -2236,14 +2343,18 @@ async function deleteChild(){
   if(!curChild || myRole !== "owner") return;
   const c = curChild, name = c.name || "this child";
   const others = Object.keys(c.roles || {}).filter(u => u !== me).length;
-  const typed = await askText(`Delete ${name}?`, `This permanently deletes ${name}'s details, care plan and every seizure record${others ? `, for all ${others+1} people on the team` : ""}. It can't be undone – download a backup or PDF first if you need one. Type the child's name to confirm:`, "text");
+  const typed = await askText(`Delete ${name}?`, `This permanently deletes ${name}'s details, care plan, every seizure record, handover note and appointment${others ? `, for all ${others+1} people on the team` : ""}. It can't be undone – download a backup or PDF first if you need one. Type the child's name to confirm:`, "text");
   if(typed === null) return;
   if(typed.trim().toLowerCase() !== (c.name || "").trim().toLowerCase()){ toast("The name didn't match – nothing was deleted"); return; }
   toast("Deleting…");
   try{
     const snap = await withTimeout(F.getDocs(F.collection(fdb, "children", c.id, "seizures")), 20000, "No signal");
-    const docs = snap.docs;
+    const docs = [...snap.docs];
+    stopExtras();
+    for(const sub of ["notes", "appointments"]){ try{ const ss = await withTimeout(F.getDocs(F.collection(fdb, "children", c.id, sub)), 20000, "No signal"); docs.push(...ss.docs); }catch(e){ console.warn(sub, e); } }
     for(let i = 0; i < docs.length; i += 400){ const b = F.writeBatch(fdb); docs.slice(i, i+400).forEach(d => b.delete(d.ref)); await withTimeout(b.commit(), 20000, "No signal"); }
+    try{ const au = await withTimeout(F.getDocs(F.collection(fdb, "children", c.id, "audit")), 20000, "No signal"); const ad = au.docs;
+      for(let i = 0; i < ad.length; i += 400){ const b = F.writeBatch(fdb); ad.slice(i, i+400).forEach(d => b.delete(d.ref)); await withTimeout(b.commit(), 20000, "No signal"); } }catch(e){ console.warn("audit", e); }
     await withTimeout(F.deleteDoc(F.doc(fdb, "children", c.id)), 20000, "No signal");
     ["st_cloud_"+c.id, "st_cloudset_"+c.id].forEach(k => { try{ localStorage.removeItem(k); }catch{} });
     if(ls.get(LOCAL_CHILD, null) === c.id) ls.del(LOCAL_CHILD);
@@ -2312,8 +2423,116 @@ $("#obEmailBtn").onclick = async () => {
 };
 $("#obStart").onclick = () => { hideOnboarding(); if(!backend) useLocal(); $("#startBtn").click(); };
 
+// ---------- handover notes and appointments ----------
+var notes = [], appts = [], unsubNotes = null, unsubAppts = null;
+function xKey(k){ return (backend === "firebase" && curChild) ? `st_cloud${k}_${curChild.id}` : `st_${k}_v1`; }
+function xLoadLocal(){ notes = ls.get(xKey("notes"), []); appts = ls.get(xKey("appts"), []); renderExtras(); }
+function stopExtras(){ [unsubNotes, unsubAppts].forEach(u => { try{ u && u(); }catch{} }); unsubNotes = unsubAppts = null; }
+function subscribeExtras(cid){
+  stopExtras(); xLoadLocal();
+  unsubNotes = F.onSnapshot(F.collection(fdb, "children", cid, "notes"), snap => {
+    if(!curChild || curChild.id !== cid) return;
+    notes = snap.docs.map(d => fromFs(d.id, d.data())); ls.set(xKey("notes"), notes); renderExtras();
+  }, err => console.warn("notes", err));
+  unsubAppts = F.onSnapshot(F.collection(fdb, "children", cid, "appointments"), snap => {
+    if(!curChild || curChild.id !== cid) return;
+    appts = snap.docs.map(d => fromFs(d.id, d.data())); ls.set(xKey("appts"), appts); renderExtras();
+  }, err => console.warn("appointments", err));
+}
+const canNote = () => backend !== "firebase" ? canWrite : ["owner","carer","logger"].includes(myRole);
+const canAppt = () => backend !== "firebase" ? canWrite : ["owner","carer"].includes(myRole);
+function agoLong(ms){ const m = Math.round((Date.now() - ms) / 60000); if(m < 1) return "just now"; if(m < 60) return m + " min ago"; const h = Math.round(m / 60); if(h < 24) return h + (h === 1 ? " hour ago" : " hours ago"); return fmtDate(ms) + " " + fmtTime(ms); }
+function noteHTML(n){
+  const mine = backend !== "firebase" || n.by === me, canDel = mine || ["owner","carer"].includes(myRole);
+  return `<div class="hnote"><div class="txt">${esc(n.text)}</div><div class="who">${n.byName ? esc(n.byName) + " · " : ""}${esc(agoLong(n.createdAt || 0))}${canDel ? ` · <a href="#" data-ndel="${esc(n.id)}" style="color:var(--muted)">delete</a>` : ""}</div></div>`;
+}
+function wireNoteDel(root){ root.querySelectorAll("[data-ndel]").forEach(a => a.onclick = e => { e.preventDefault(); const id = a.dataset.ndel; confirmSheet("Delete this note?", "It will be removed for everyone on the team.", "Delete", () => delNote(id)); }); }
+function renderExtras(){
+  const nl = $("#notesList"); if(!nl) return;
+  const ns = [...notes].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  nl.innerHTML = ns.length ? ns.slice(0, 3).map(noteHTML).join("") : `<div class="empty" style="padding:4px 0">No notes yet. Use these to hand over between carers – e.g. "Bad night, very tired today".</div>`;
+  wireNoteDel(nl);
+  $("#noteAdd").classList.toggle("hidden", !canNote());
+  $("#noteAll").classList.toggle("hidden", ns.length <= 3);
+  const al = $("#apptList"), now = Date.now();
+  const up = appts.filter(a => a.date >= now - 3*3600e3).sort((a,b) => a.date - b.date), past = appts.filter(a => a.date < now - 3*3600e3).sort((a,b) => b.date - a.date);
+  const row = (a, upc) => `<div class="appt" data-aid="${esc(a.id)}"><div><div class="d">${esc(fmtDate(a.date))} · ${esc(fmtTime(a.date))}</div><div class="w">${esc(a.clinician || "Appointment")}${(a.questions||[]).length ? ` · ${a.questions.length} question${a.questions.length > 1 ? "s" : ""}` : ""}</div></div><span class="tag ${upc ? "up" : ""}">${upc ? "Coming up" : (a.outcome ? "Notes added" : "Add notes")}</span></div>`;
+  al.innerHTML = (up.length || past.length) ? up.map(a => row(a, true)).join("") + past.slice(0, 4).map(a => row(a, false)).join("") : `<div class="empty" style="padding:4px 0">No appointments yet.</div>`;
+  al.querySelectorAll("[data-aid]").forEach(el => el.onclick = () => openAppt(appts.find(a => a.id === el.dataset.aid)));
+  $("#apptAdd").classList.toggle("hidden", !canAppt());
+}
+function addNote(text){
+  const n = {id: uid(), text, by: me || "local", byName: myName || "", createdAt: Date.now()};
+  notes.push(n); ls.set(xKey("notes"), notes); renderExtras(); toast("Note added");
+  if(backend === "firebase" && curChild) F.setDoc(F.doc(fdb, "children", curChild.id, "notes", n.id), {text, by: me, byName: myName, createdAt: F.serverTimestamp()}).catch(e => handleDbErr(e, "save"));
+}
+function delNote(id){
+  notes = notes.filter(n => n.id !== id); ls.set(xKey("notes"), notes); renderExtras();
+  if(backend === "firebase" && curChild) F.deleteDoc(F.doc(fdb, "children", curChild.id, "notes", id)).catch(e => handleDbErr(e, "delete"));
+}
+["#obGoogle", "#obEmailBtn"].forEach(sel => { const b = $(sel); if(b) b.addEventListener("click", e => {
+  const c = $("#obConsent");
+  if(c && !c.checked){ e.stopImmediatePropagation(); e.preventDefault(); toast("Please tick to agree to the privacy notice first"); const l = c.closest("label"); l.classList.remove("shake"); void l.offsetWidth; l.classList.add("shake"); }
+  else ls.set(LOCAL_CONSENT, Date.now());
+}, true); });
+$("#noteAdd").onclick = () => {
+  showSheet(`<h3>Handover note</h3><p style="color:var(--muted);margin:4px 0 10px">Everyone on ${esc(settings.name || "the child")}'s team will see this.</p>
+    <textarea id="noteTxt" maxlength="2000" placeholder="e.g. Bad night, woke at 3am. Very tired today – keep an eye on her this afternoon."></textarea>
+    <div class="dialog-btns"><button class="ghost" id="noteNo">Cancel</button><button class="primary" id="noteYes">Add note</button></div>`);
+  setTimeout(() => { const t = $("#noteTxt"); t && t.focus(); }, 50);
+  $("#noteNo").onclick = hideSheet;
+  $("#noteYes").onclick = () => { const v = $("#noteTxt").value.trim(); if(!v){ toast("Type a note first"); return; } hideSheet(); addNote(v); };
+};
+$("#noteAll").onclick = () => {
+  const ns = [...notes].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  showSheet(`<h3>Handover notes</h3><div id="noteAllList">${ns.map(noteHTML).join("")}</div><div class="dialog-btns"><button class="primary" id="noteClose">Close</button></div>`);
+  wireNoteDel($("#noteAllList")); $("#noteClose").onclick = hideSheet;
+};
+function saveAppt(a){
+  const isNew = !appts.some(x => x.id === a.id);
+  if(isNew){ a.by = me || "local"; a.byName = myName || ""; appts.push(a); } else appts = appts.map(x => x.id === a.id ? {...x, ...a} : x);
+  ls.set(xKey("appts"), appts); renderExtras();
+  if(backend === "firebase" && curChild){
+    const data = {date: a.date, clinician: a.clinician || "", questions: a.questions || [], outcome: a.outcome || "", updatedBy: me, updatedAt: F.serverTimestamp()};
+    if(isNew){ data.by = me; data.byName = myName; data.createdAt = F.serverTimestamp(); }
+    F.setDoc(F.doc(fdb, "children", curChild.id, "appointments", a.id), data, {merge: !isNew}).catch(e => handleDbErr(e, "save"));
+  }
+}
+function delAppt(id){
+  appts = appts.filter(a => a.id !== id); ls.set(xKey("appts"), appts); renderExtras();
+  if(backend === "firebase" && curChild) F.deleteDoc(F.doc(fdb, "children", curChild.id, "appointments", id)).catch(e => handleDbErr(e, "delete"));
+}
+function packDays(a){ const prev = appts.filter(x => x.id !== a.id && x.date < a.date).sort((x,y) => y.date - x.date)[0]; return prev ? Math.max(1, Math.ceil((a.date - prev.date) / 864e5)) : 90; }
+function openAppt(a){
+  const isNew = !a; a = a || {id: uid(), date: (() => { const d = new Date(Date.now() + 7*864e5); d.setHours(10,0,0,0); return d.getTime(); })(), clinician: "", questions: [], outcome: ""};
+  const ro = !canAppt(), past = a.date < Date.now();
+  showSheet(`<h3>${isNew ? "Prepare for an appointment" : "Appointment"}</h3>
+    <label>Date and time</label><input type="datetime-local" id="apDate" value="${toLocalInput(a.date)}">
+    <label>With / where</label><input id="apWho" value="${esc(a.clinician || "")}" placeholder="e.g. Dr Smith, epilepsy clinic, Addenbrooke's">
+    <label>Questions to ask <span style="font-weight:400;color:var(--muted)">– one per line</span></label>
+    <textarea id="apQs" placeholder="e.g. Should we change the rescue medication timing?&#10;Is the VNS setting right?">${esc((a.questions || []).join("\n"))}</textarea>
+    <label>${past ? "What was said and agreed" : "After the appointment: what was said and agreed"}</label>
+    <textarea id="apOut" placeholder="e.g. Increase dose from next week. Review in 3 months.">${esc(a.outcome || "")}</textarea>
+    <div class="note" style="margin-top:10px">The <b>appointment pack</b> is a PDF with these questions, space for notes, and a seizure report covering ${packDays(a) === 90 ? "the last 3 months" : `the ${packDays(a)} days since the previous appointment`}.</div>
+    <div class="row" style="margin-top:10px"><button class="primary" id="apSend"><span class="em">📄</span> Send pack</button><button id="apDl"><span class="em">⬇️</span> Download pack</button></div>
+    <div class="dialog-btns">${!isNew && !ro ? `<button class="danger" id="apDel">Delete</button>` : `<button class="ghost" id="apNo">${ro ? "Close" : "Cancel"}</button>`}${ro ? "" : `<button class="primary" id="apSave">Save</button>`}</div>`);
+  if(ro) document.querySelectorAll("#sheet input,#sheet textarea").forEach(x => x.disabled = true);
+  const read = () => ({...a, date: new Date($("#apDate").value).getTime() || a.date, clinician: $("#apWho").value.trim(), questions: $("#apQs").value.split("\n").map(x => x.trim()).filter(Boolean), outcome: $("#apOut").value.trim()});
+  if($("#apNo")) $("#apNo").onclick = hideSheet;
+  if($("#apDel")) $("#apDel").onclick = () => confirmSheet("Delete this appointment?", "Its questions and notes will be removed for everyone on the team.", "Delete", () => delAppt(a.id));
+  if($("#apSave")) $("#apSave").onclick = () => { saveAppt(read()); hideSheet(); toast("Appointment saved"); };
+  const pack = () => { const cur = read(); return {cur, bytes: buildPdf(packDays(cur), {appt: cur})}; };
+  $("#apDl").onclick = async () => { const {cur, bytes} = pack(); if(!ro) saveAppt(cur); toast((await saveFile(packName(cur), bytes, "application/pdf")) ? "Pack saved to Downloads" : "Couldn't save the pack"); };
+  $("#apSend").onclick = async () => { const {cur, bytes} = pack(); if(!ro) saveAppt(cur);
+    const f = new File([bytes], packName(cur), {type: "application/pdf"});
+    if(!canSharePdf){ toast((await saveFile(packName(cur), bytes, "application/pdf")) ? "Pack saved to Downloads – attach it to an email" : "Couldn't save the pack"); return; }
+    try{ await navigator.share({title: `Appointment pack – ${settings.name || "my child"} – ${fmtDate(cur.date)}`, text: `Hello,\n\nAttached is ${settings.name || "my child"}'s seizure report and our questions for the appointment on ${fmtDate(cur.date)}.\n`, files: [f]}); }
+    catch(err){ if(err && err.name !== "AbortError") toast("Sharing didn't work – try Download pack"); } };
+}
+$("#apptAdd").onclick = () => openAppt(null);
+
 // ---------- feedback ----------
-const APP_VERSION="2026.11.22-36";
+const APP_VERSION="2026.11.23-37";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");

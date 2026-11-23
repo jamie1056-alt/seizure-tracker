@@ -9,6 +9,8 @@ rules_version = '2';
 //   carer  – log seizures, edit and delete entries
 //   logger – log seizures; edit only their own entries for 24 hours
 //   viewer – read only
+//
+// Handover notes: everyone except viewers can add; appointments: lead carers and carers.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -98,13 +100,48 @@ service cloud.firestore {
         allow delete: if hasRole(cid, ['owner', 'carer']);
       }
 
-      // ---------- change history (append-only) ----------
+      // ---------- handover notes ----------
+      match /notes/{nid} {
+        allow read: if hasRole(cid, ['owner', 'carer', 'logger', 'viewer']);
+        allow create: if hasRole(cid, ['owner', 'carer', 'logger'])
+          && request.resource.data.by == uid()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
+        allow update: if false;
+        allow delete: if hasRole(cid, ['owner', 'carer'])
+          || (hasRole(cid, ['logger']) && resource.data.by == uid());
+      }
+
+      // ---------- appointments (questions, outcome) ----------
+      match /appointments/{aid} {
+        function validAppt() {
+          let d = request.resource.data;
+          return d.date is number
+            && d.updatedBy == uid()
+            && d.updatedAt == request.time;
+        }
+        allow read: if hasRole(cid, ['owner', 'carer', 'logger', 'viewer']);
+        allow create: if hasRole(cid, ['owner', 'carer'])
+          && validAppt()
+          && request.resource.data.by == uid()
+          && request.resource.data.createdAt == request.time;
+        allow update: if hasRole(cid, ['owner', 'carer'])
+          && validAppt()
+          && request.resource.data.by == resource.data.by
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if hasRole(cid, ['owner', 'carer']);
+      }
+
+      // ---------- change history (append-only; removed only when a lead carer deletes the child) ----------
       match /audit/{aid} {
         allow read: if hasRole(cid, ['owner']);
         allow create: if hasRole(cid, ['owner', 'carer', 'logger'])
           && request.resource.data.by == uid()
           && request.resource.data.at == request.time;
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if hasRole(cid, ['owner']);
       }
     }
 

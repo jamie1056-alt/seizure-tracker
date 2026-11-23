@@ -76,6 +76,7 @@ footer img{width:34px;height:34px;border-radius:9px}
   <li><a href="#during">During a seizure</a></li>
   <li><a href="#after">After a seizure</a></li>
   <li><a href="#history">History and patterns</a></li>
+  <li><a href="#notes">Handover notes and appointments</a></li>
   <li><a href="#doctor">Send a report to the doctor</a></li>
   <li><a href="#team">Share with your team</a></li>
   <li><a href="#privacy">Privacy and where data is kept</a></li>
@@ -122,6 +123,7 @@ footer img{width:34px;height:34px;border-radius:9px}
     <tr><td><b>Sign in</b> (Google or email link)</td><td>Backing up safely and sharing with others. Needed if more than one person logs seizures.</td></tr>
   </table>
   <p>When you sign in for the first time you'll <b>set up a child</b>: enter a name (initials are fine) and, if you like, age or date of birth. If you were already using the app, keep <b>"Copy the seizures already saved on this phone"</b> ticked so nothing is lost. You become the child's <b>lead carer</b>.</p>
+  <p>Before signing in you'll tick to agree to the <a href="privacy.html">privacy notice</a>, and when you set up a child you'll confirm you're their parent or guardian (or have their permission).</p>
   <div class="tip"><b>Been sent an invite link?</b>Don't set up a child – just open the link and sign in. You'll join the existing team. See <a href="#team">section 9</a>.</div>
 </section>
 
@@ -166,6 +168,7 @@ footer img{width:34px;height:34px;border-radius:9px}
         <li>When it stops, tap <span class="btn green">Seizure ended</span>.</li>
       </ol>
       <p>Started it by mistake? Tap <b>Started by mistake</b> at the bottom – nothing is saved.</p>
+      <p><b>At night</b> the timer turns dim red on black (9pm–7am), so it won't dazzle you in a dark room. Tap <span class="btn">🌙 Night</span> / <span class="btn">☀️ Day</span> at the top to switch, or change it in <b>Settings → Timer screen at night</b>.</p>
     </div>
   </div>
   <div class="split" style="margin-top:12px">
@@ -185,10 +188,12 @@ footer img{width:34px;height:34px;border-radius:9px}
     <div>
       <p>The <b>recovery timer</b> starts straight away and reminds you to check breathing at the interval set in Settings. <span class="btn">Recovery position</span> shows a diagram and steps.</p>
       <img src="recovery-position.svg" alt="Recovery position diagram" style="width:100%;border-radius:14px;margin:4px 0 10px">
+      <p><b>Another seizure starting?</b> Tap <span class="btn red">Another seizure has started</span> on the recovery screen. A new timer starts straight away and the seizures are linked as a <b>cluster</b> in the log and reports.</p>
       <p>Tap <span class="btn green">Back to normal</span> when they've recovered – the recovery time is saved.</p>
       <p>Then tap <span class="btn">Add details now</span> (or later, from the list). The record is already filled in with the time, length, VNS swipes, rescue medication and everything you marked. Add:</p>
       <ul class="ticks">
-        <li><b>Severity</b> (1 mild – 5 severe) and <b>type</b></li>
+        <li><b>Severity</b> (1 mild – 5 severe) and <b>type</b> – each type has a short description</li>
+        <li><b>Awake or asleep?</b> – and the time they woke, if known</li>
         <li>Anything else you saw, possible triggers and notes</li>
       </ul>
       <p>Tap <b>Save</b>. Everyone in the team sees it straight away.</p>
@@ -218,6 +223,19 @@ footer img{width:34px;height:34px;border-radius:9px}
     </div>
     <div><img class="shot" src="history.png" alt="History screen"><div class="cap">History</div></div>
   </div>
+</section>
+
+<section id="notes">
+  <h2><span class="n">✎</span>Handover notes and appointments</h2>
+  <h3>Handover notes</h3>
+  <p>On the <b>Home</b> screen, <span class="btn blue">Add a note</span> lets anyone on the team (except viewers) leave a quick message that isn't a seizure – e.g. "Bad night, very tired today". Everyone sees the latest notes, with who wrote them and when.</p>
+  <h3>Appointments</h3>
+  <ol class="steps">
+    <li>Go to <b>History → Appointments → Prepare for an appointment</b>.</li>
+    <li>Add the date, who it's with, and your <b>questions</b> – one per line. Anyone on the team can see them.</li>
+    <li>Tap <span class="btn blue">Send pack</span> or <span class="btn">Download pack</span>: a PDF with your questions, space for notes, and a seizure report since the last appointment.</li>
+    <li>Afterwards, open the appointment and fill in <b>what was said and agreed</b>, so the whole team knows.</li>
+  </ol>
 </section>
 
 <section id="doctor">
@@ -268,11 +286,12 @@ footer img{width:34px;height:34px;border-radius:9px}
 
 <section id="privacy">
   <h2><span class="n">10</span>Privacy, security and where data is kept</h2>
+  <p>The full <a href="privacy.html"><b>privacy notice</b></a> explains what's collected, why, your rights and how to contact us. You agree to it when you sign in, and lead carers confirm consent when they set up a child.</p>
   <h3>Who hosts what</h3>
   <table>
     <tr><th style="width:30%">What</th><th style="width:34%">Who and where</th><th>Notes</th></tr>
     <tr><td><b>The app itself</b> (its pages, code and pictures)</td><td><b>GitHub Pages</b> (GitHub, owned by Microsoft), served worldwide</td><td>Contains no personal or health information. It's just the program your phone downloads.</td></tr>
-    <tr><td><b>Shared seizure logs</b>, care plan, team members, invites and change history</td><td><b>Google Firebase – Cloud Firestore</b>, in Google's <b>London (europe-west2)</b> data centre, UK</td><td>Only when you sign in. Only people the lead carer has invited can read a child's log – checked by Google's servers, not just the app.</td></tr>
+    <tr><td><b>Shared seizure logs</b>, care plan, handover notes, appointments, team members, invites and change history</td><td><b>Google Firebase – Cloud Firestore</b>, in Google's <b>London (europe-west2)</b> data centre, UK</td><td>Only when you sign in. Only people the lead carer has invited can read a child's log – checked by Google's servers, not just the app.</td></tr>
     <tr><td><b>Sign-in details</b> (name, email address, Google sign-in)</td><td><b>Google Firebase Authentication</b>, on Google's global infrastructure</td><td>May be processed outside the UK, under Google's data-processing terms and UK data-transfer safeguards. Health information is not kept here.</td></tr>
     <tr><td><b>Phone-only logs</b> and the offline copy</td><td>Your phone only (the browser's storage)</td><td>Never uploaded. Lost if the app is uninstalled or the phone is lost – keep a backup.</td></tr>
     <tr><td><b>Videos</b></td><td>The phone that recorded them only</td><td>Never uploaded or synced.</td></tr>
