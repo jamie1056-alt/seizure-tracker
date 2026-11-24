@@ -1769,7 +1769,7 @@ function buildPdf(daysArg, opts){
   heading("Details"); kv(det); y+=18;
   if(opts.appt){ const a=opts.appt;
     heading("Appointment");
-    kv([["Date",`${fmtDate(a.date)} at ${fmtTime(a.date)}`],["With / where",a.clinician||"–"]]); y+=14;
+    kv([["Date",`${fmtDate(a.date)} at ${fmtTime(a.date)}`],["With",a.clinician||"–"],...(a.address?[["Address",a.address]]:[])]); y+=14;
     const qs=(a.questions||[]).filter(Boolean);
     if(qs.length){ need(30); text("Questions to ask",M,y+4,10.5,{bold:true}); y+=16;
       qs.forEach((q,i)=>{ const ls2=pdfWrap(q,10,false,CW-24); need(ls2.length*13+6); text(`${i+1}.`,M+4,y+8,10,{bold:true,color:PURPLE}); ls2.forEach((l,j)=>text(l,M+22,y+8+j*13,10)); y+=ls2.length*13+6; }); y+=8; }
@@ -2456,7 +2456,7 @@ function renderExtras(){
   $("#noteAll").classList.toggle("hidden", ns.length <= 3);
   const al = $("#apptList"), now = Date.now();
   const up = appts.filter(a => a.date >= now - 3*3600e3).sort((a,b) => a.date - b.date), past = appts.filter(a => a.date < now - 3*3600e3).sort((a,b) => b.date - a.date);
-  const row = (a, upc) => `<div class="appt" data-aid="${esc(a.id)}"><div><div class="d">${esc(fmtDate(a.date))} · ${esc(fmtTime(a.date))}</div><div class="w">${esc(a.clinician || "Appointment")}${(a.questions||[]).length ? ` · ${a.questions.length} question${a.questions.length > 1 ? "s" : ""}` : ""}</div></div><span class="tag ${upc ? "up" : ""}">${upc ? "Coming up" : (a.outcome ? "Notes added" : "Add notes")}</span></div>`;
+  const row = (a, upc) => `<div class="appt" data-aid="${esc(a.id)}"><div><div class="d">${esc(fmtDate(a.date))} · ${esc(fmtTime(a.date))}</div><div class="w">${esc(a.clinician || "Appointment")}${a.address ? ` · ${esc(a.address.split(",")[0])}` : ""}${(a.questions||[]).length ? ` · ${a.questions.length} question${a.questions.length > 1 ? "s" : ""}` : ""}</div></div><span class="tag ${upc ? "up" : ""}">${upc ? "Coming up" : (a.outcome ? "Notes added" : "Add notes")}</span></div>`;
   al.innerHTML = (up.length || past.length) ? up.map(a => row(a, true)).join("") + past.slice(0, 4).map(a => row(a, false)).join("") : `<div class="empty" style="padding:4px 0">No appointments yet.</div>`;
   al.querySelectorAll("[data-aid]").forEach(el => el.onclick = () => openAppt(appts.find(a => a.id === el.dataset.aid)));
   $("#apptAdd").classList.toggle("hidden", !canAppt());
@@ -2493,7 +2493,7 @@ function saveAppt(a){
   if(isNew){ a.by = me || "local"; a.byName = myName || ""; appts.push(a); } else appts = appts.map(x => x.id === a.id ? {...x, ...a} : x);
   ls.set(xKey("appts"), appts); renderExtras();
   if(backend === "firebase" && curChild){
-    const data = {date: a.date, clinician: a.clinician || "", questions: a.questions || [], outcome: a.outcome || "", updatedBy: me, updatedAt: F.serverTimestamp()};
+    const data = {date: a.date, clinician: a.clinician || "", address: a.address || "", questions: a.questions || [], outcome: a.outcome || "", updatedBy: me, updatedAt: F.serverTimestamp()};
     if(isNew){ data.by = me; data.byName = myName; data.createdAt = F.serverTimestamp(); }
     F.setDoc(F.doc(fdb, "children", curChild.id, "appointments", a.id), data, {merge: !isNew}).catch(e => handleDbErr(e, "save"));
   }
@@ -2508,7 +2508,9 @@ function openAppt(a){
   const ro = !canAppt(), past = a.date < Date.now();
   showSheet(`<h3>${isNew ? "Prepare for an appointment" : "Appointment"}</h3>
     <label>Date and time</label><input type="datetime-local" id="apDate" value="${toLocalInput(a.date)}">
-    <label>With / where</label><input id="apWho" value="${esc(a.clinician || "")}" placeholder="e.g. Dr Smith, epilepsy clinic, Addenbrooke's">
+    <label>With</label><input id="apWho" value="${esc(a.clinician || "")}" placeholder="e.g. Dr Smith, epilepsy clinic">
+    <label>Address</label><input id="apAddr" value="${esc(a.address || "")}" placeholder="e.g. Addenbrooke's Hospital, Hills Road, Cambridge CB2 0QQ" autocomplete="off">
+    <a id="apMap" class="${a.address ? "" : "hidden"}" href="#" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-weight:600;color:var(--accent)">📍 Open in Google Maps</a>
     <label>Questions to ask <span style="font-weight:400;color:var(--muted)">– one per line</span></label>
     <textarea id="apQs" placeholder="e.g. Should we change the rescue medication timing?&#10;Is the VNS setting right?">${esc((a.questions || []).join("\n"))}</textarea>
     <label>${past ? "What was said and agreed" : "After the appointment: what was said and agreed"}</label>
@@ -2518,16 +2520,19 @@ function openAppt(a){
     <div class="row" style="margin-top:8px"><a class="btnlink" id="apGcal" href="#" target="_blank" rel="noopener" style="background:var(--panel2);color:var(--text)"><span class="em">📅</span> Add to Google Calendar</a><button id="apIcs"><span class="em">🗓️</span> Other calendar</button></div>
     <div class="dialog-btns">${!isNew && !ro ? `<button class="danger" id="apDel">Delete</button>` : `<button class="ghost" id="apNo">${ro ? "Close" : "Cancel"}</button>`}${ro ? "" : `<button class="primary" id="apSave">Save</button>`}</div>`);
   if(ro) document.querySelectorAll("#sheet input,#sheet textarea").forEach(x => x.disabled = true);
-  const read = () => ({...a, date: new Date($("#apDate").value).getTime() || a.date, clinician: $("#apWho").value.trim(), questions: $("#apQs").value.split("\n").map(x => x.trim()).filter(Boolean), outcome: $("#apOut").value.trim()});
+  const read = () => ({...a, date: new Date($("#apDate").value).getTime() || a.date, clinician: $("#apWho").value.trim(), address: $("#apAddr").value.trim(), questions: $("#apQs").value.split("\n").map(x => x.trim()).filter(Boolean), outcome: $("#apOut").value.trim()});
   if($("#apNo")) $("#apNo").onclick = hideSheet;
   if($("#apDel")) $("#apDel").onclick = () => confirmSheet("Delete this appointment?", "Its questions and notes will be removed for everyone on the team.", "Delete", () => delAppt(a.id));
   if($("#apSave")) $("#apSave").onclick = () => { saveAppt(read()); hideSheet(); toast("Appointment saved"); };
   const calInfo = cur => { const t = `${settings.name ? settings.name + " – " : ""}${cur.clinician || "Appointment"}`, d = new Date(cur.date), e = new Date(cur.date + 3600e3), z = x => x.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    return {t, start: z(d), end: z(e), det: "Questions and the appointment pack are in Seizure Tracker (History → Appointments):\n" + location.origin + location.pathname.replace(/[^/]*$/, ""), loc: cur.clinician || ""}; };
+    return {t, start: z(d), end: z(e), det: "Questions and the appointment pack are in Seizure Tracker (History → Appointments):\n" + location.origin + location.pathname.replace(/[^/]*$/, ""), loc: cur.address || cur.clinician || ""}; };
+  const mapHref = () => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent($("#apAddr").value.trim());
+  const syncMap = () => { const has = !!$("#apAddr").value.trim(); $("#apMap").classList.toggle("hidden", !has); $("#apMap").href = mapHref(); };
+  syncMap(); $("#apAddr").addEventListener("input", syncMap);
   const gcalHref = () => { const c = calInfo(read()); return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(c.t) + "&dates=" + c.start + "/" + c.end + "&details=" + encodeURIComponent(c.det) + "&location=" + encodeURIComponent(c.loc); };
   $("#apGcal").href = gcalHref();
   $("#apGcal").addEventListener("click", () => { $("#apGcal").href = gcalHref(); if(!ro) saveAppt(read()); });
-  ["#apDate", "#apWho"].forEach(sel => $(sel).addEventListener("input", () => { $("#apGcal").href = gcalHref(); }));
+  ["#apDate", "#apWho", "#apAddr"].forEach(sel => $(sel).addEventListener("input", () => { $("#apGcal").href = gcalHref(); }));
   $("#apIcs").onclick = async () => { const cur = read(), c = calInfo(cur); if(!ro) saveAppt(cur);
     const esc2 = v => String(v).replace(/[\\,;]/g, m => "\\" + m).replace(/\n/g, "\\n");
     const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Seizure Tracker//EN","BEGIN:VEVENT","UID:" + cur.id + "@seizure-tracker","DTSTAMP:" + calInfo({date: Date.now()}).start,"DTSTART:" + c.start,"DTEND:" + c.end,"SUMMARY:" + esc2(c.t),"LOCATION:" + esc2(c.loc),"DESCRIPTION:" + esc2(c.det),"BEGIN:VALARM","TRIGGER:-P1D","ACTION:DISPLAY","DESCRIPTION:Appointment tomorrow – check your questions in Seizure Tracker","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
@@ -2543,7 +2548,7 @@ function openAppt(a){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.24-38";
+const APP_VERSION="2026.11.24-39";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
