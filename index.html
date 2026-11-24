@@ -2503,11 +2503,66 @@ function delAppt(id){
   appts = appts.filter(a => a.id !== id); ls.set(xKey("appts"), appts); renderExtras();
   if(backend === "firebase" && curChild) F.deleteDoc(F.doc(fdb, "children", curChild.id, "appointments", id)).catch(e => handleDbErr(e, "delete"));
 }
+// ---------- calendar event → appointment ----------
+const MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+function parseCalText(raw){
+  const out = {}; if(!raw) return out;
+  let t = String(raw).replace(/\r/g, "");
+  // .ics text
+  if(/BEGIN:VEVENT|DTSTART/i.test(t)){
+    const un = t.replace(/\n[ \t]/g, "");
+    const get = k => { const m = un.match(new RegExp("^" + k + "(?:;[^:\\n]*)?:(.*)$", "mi")); return m ? m[1].replace(/\\n/g, "\n").replace(/\\([,;\\])/g, "$1").trim() : ""; };
+    const ds = get("DTSTART"), m = ds.match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?(Z?)/);
+    if(m){ const [, y, mo, d, h = "09", mi = "00", z] = m; out.date = z ? Date.UTC(+y, +mo-1, +d, +h, +mi) : new Date(+y, +mo-1, +d, +h, +mi).getTime(); }
+    out.clinician = get("SUMMARY"); out.address = get("LOCATION");
+    return out;
+  }
+  const lines = t.split("\n").map(l => l.trim()).filter(Boolean).filter(l => !/^https?:\/\//i.test(l) && !/^(join|meet|invitation|view your event)/i.test(l));
+  const monRe = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?";
+  const dmy = new RegExp("\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?" + monRe + "(?:,?\\s+(\\d{4}))?", "i");
+  const mdy = new RegExp("\\b" + monRe + "\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?", "i");
+  const num = /\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})\b/;
+  const timeRe = /\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b|\b([01]?\d|2[0-3])[:.](\d{2})\b/i;
+  let dateLine = -1, day = null, mon = null, year = null, hh = null, mm = 0;
+  lines.forEach((l, i) => {
+    if(day !== null) return;
+    let m;
+    if((m = l.match(dmy))){ day = +m[1]; mon = MONTHS.indexOf(m[2].slice(0,3).toLowerCase()); year = m[3] ? +m[3] : null; dateLine = i; }
+    else if((m = l.match(mdy))){ mon = MONTHS.indexOf(m[1].slice(0,3).toLowerCase()); day = +m[2]; year = m[3] ? +m[3] : null; dateLine = i; }
+    else if((m = l.match(num))){ day = +m[1]; mon = +m[2] - 1; year = +m[3] < 100 ? 2000 + +m[3] : +m[3]; dateLine = i; }
+    else if(/\btomorrow\b/i.test(l)){ const d = new Date(Date.now() + 864e5); day = d.getDate(); mon = d.getMonth(); year = d.getFullYear(); dateLine = i; }
+    else if(/\btoday\b/i.test(l)){ const d = new Date(); day = d.getDate(); mon = d.getMonth(); year = d.getFullYear(); dateLine = i; }
+  });
+  const timeSrc = dateLine >= 0 ? [lines[dateLine], ...lines] : lines;
+  for(const l of timeSrc){ const m = l.replace(num, "").match(timeRe); if(m){ if(m[3]){ hh = +m[1] % 12 + (m[3].toLowerCase() === "pm" ? 12 : 0); mm = +(m[2] || 0); } else { hh = +m[4]; mm = +m[5]; } break; } }
+  if(day !== null && mon >= 0){
+    const now = new Date();
+    let y = year || now.getFullYear(), d = new Date(y, mon, day, hh ?? 9, mm);
+    if(!year && d.getTime() < Date.now() - 864e5) d = new Date(y + 1, mon, day, hh ?? 9, mm);
+    out.date = d.getTime();
+  }
+  const pc = /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i;
+  const isDateish = l => dmy.test(l) || mdy.test(l) || num.test(l) || /\b(today|tomorrow)\b/i.test(l) || /^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/i.test(l) || (timeRe.test(l) && l.length < 30);
+  const rest = lines.map((l, i) => ({l, i})).filter(x => x.i !== dateLine && !isDateish(x.l));
+  const addr = rest.find(x => pc.test(x.l)) || rest.find(x => x.i > dateLine && dateLine >= 0 && /,/.test(x.l)) || rest.find(x => /\b(hospital|clinic|surgery|centre|center|road|street|lane|avenue|way|drive)\b/i.test(x.l) && x !== rest[0]);
+  const title = rest.find(x => x !== addr);
+  if(title) out.clinician = title.l.replace(/^(event|title|what)\s*[:–-]\s*/i, "");
+  if(addr) out.address = addr.l.replace(/^(where|location)\s*[:–-]\s*/i, "");
+  return out;
+}
+function newApptFrom(text){
+  const p = parseCalText(text), base = {id: uid(), date: (() => { const d = new Date(Date.now() + 7*864e5); d.setHours(10,0,0,0); return d.getTime(); })(), clinician: "", address: "", questions: [], outcome: ""};
+  return {appt: {...base, ...Object.fromEntries(Object.entries(p).filter(([, v]) => v))}, found: Object.keys(p).filter(k => p[k])};
+}
+
 function packDays(a){ const prev = appts.filter(x => x.id !== a.id && x.date < a.date).sort((x,y) => y.date - x.date)[0]; return prev ? Math.max(1, Math.ceil((a.date - prev.date) / 864e5)) : 90; }
-function openAppt(a){
-  const isNew = !a; a = a || {id: uid(), date: (() => { const d = new Date(Date.now() + 7*864e5); d.setHours(10,0,0,0); return d.getTime(); })(), clinician: "", questions: [], outcome: ""};
+function openAppt(a, note){
+  const isNew = !a || !appts.some(x => x.id === a.id); a = a || {id: uid(), date: (() => { const d = new Date(Date.now() + 7*864e5); d.setHours(10,0,0,0); return d.getTime(); })(), clinician: "", questions: [], outcome: ""};
   const ro = !canAppt(), past = a.date < Date.now();
   showSheet(`<h3>${isNew ? "Prepare for an appointment" : "Appointment"}</h3>
+    ${note ? `<div class="note" style="margin:6px 0 4px">${note}</div>` : ""}
+    ${isNew && !ro ? `<button id="apPaste" style="width:100%;margin-top:6px"><span class="em">📋</span> Paste from calendar</button>
+    <div id="apPasteBox" class="hidden"><label>Paste the calendar event here</label><textarea id="apPasteTxt" placeholder="Long-press and paste the event's title, date, time and place"></textarea><button class="primary" id="apPasteGo" style="width:100%;margin-top:8px">Fill in</button></div>` : ""}
     <label>Date and time</label><input type="datetime-local" id="apDate" value="${toLocalInput(a.date)}">
     <label>With</label><input id="apWho" value="${esc(a.clinician || "")}" placeholder="e.g. Dr Smith, epilepsy clinic">
     <label>Address</label><input id="apAddr" value="${esc(a.address || "")}" placeholder="e.g. Addenbrooke's Hospital, Hills Road, Cambridge CB2 0QQ" autocomplete="off">
@@ -2521,6 +2576,18 @@ function openAppt(a){
     <div class="row" style="margin-top:8px"><a class="btnlink" id="apGcal" href="#" target="_blank" rel="noopener" style="background:var(--panel2);color:var(--text)"><span class="em">📅</span> Add to Google Calendar</a><button id="apIcs"><span class="em">🗓️</span> Other calendar</button></div>
     <div class="dialog-btns">${!isNew && !ro ? `<button class="danger" id="apDel">Delete</button>` : `<button class="ghost" id="apNo">${ro ? "Close" : "Cancel"}</button>`}${ro ? "" : `<button class="primary" id="apSave">Save</button>`}</div>`);
   if(ro) document.querySelectorAll("#sheet input,#sheet textarea").forEach(x => x.disabled = true);
+  const fillFrom = txt => { const {appt: p, found} = newApptFrom(txt);
+    if(!found.length){ toast("Couldn't find appointment details in that – try copying the event's title, date and place"); return false; }
+    if(p.date && found.includes("date")) $("#apDate").value = toLocalInput(p.date);
+    if(p.clinician) $("#apWho").value = p.clinician;
+    if(p.address){ $("#apAddr").value = p.address; $("#apAddr").dispatchEvent(new Event("input")); }
+    $("#apDate").dispatchEvent(new Event("input"));
+    toast("Filled in " + found.map(k => ({date: "date and time", clinician: "who", address: "address"})[k]).join(", ") + " – please check"); return true; };
+  if($("#apPaste")) $("#apPaste").onclick = async () => {
+    let txt = ""; try{ txt = await navigator.clipboard.readText(); }catch{}
+    if(txt && fillFrom(txt)){ $("#apPasteBox").classList.add("hidden"); return; }
+    $("#apPasteBox").classList.remove("hidden"); $("#apPasteTxt").focus(); };
+  if($("#apPasteGo")) $("#apPasteGo").onclick = () => { if(fillFrom($("#apPasteTxt").value)) $("#apPasteBox").classList.add("hidden"); };
   const read = () => ({...a, date: new Date($("#apDate").value).getTime() || a.date, clinician: $("#apWho").value.trim(), address: $("#apAddr").value.trim(), questions: $("#apQs").value.split("\n").map(x => x.trim()).filter(Boolean), outcome: $("#apOut").value.trim()});
   if($("#apNo")) $("#apNo").onclick = hideSheet;
   if($("#apDel")) $("#apDel").onclick = () => confirmSheet("Delete this appointment?", "Its questions and notes will be removed for everyone on the team.", "Delete", () => delAppt(a.id));
@@ -2549,7 +2616,7 @@ function openAppt(a){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.24-40";
+const APP_VERSION="2026.11.24-41";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
@@ -2584,6 +2651,15 @@ const savedActive = ls.get(LOCAL_ACTIVE, null);
 if(savedActive && savedActive.start){ active=savedActive; openTimer(); }
 const savedRecov = ls.get(LOCAL_RECOV, null);
 if(!active && savedRecov && savedRecov.id && Date.now()-savedRecov.endAt < 6*3600e3){ recov=savedRecov; openRecovery(); }
+// shared into the app (e.g. a Google Calendar event → Share → Seizure Tracker)
+try{ const q=new URLSearchParams(location.search); const sh=[q.get("title"),q.get("text"),q.get("url")].filter(Boolean).join("\n");
+  if(q.has("share") || (sh && !q.get("join") && !q.get("start"))){ history.replaceState(null,"",location.pathname);
+    if(sh){ let tries=0; const go=()=>{ const ready = backend!=="firebase" || (curChild && myRole); if(!ready && tries++<40){ setTimeout(go,500); return; }
+      if(active){ toast("Finish the seizure timer first, then share the event again"); return; }
+      if(!canAppt()){ toast("Only lead carers and carers can add appointments"); return; }
+      { const hb=document.querySelector("nav [data-v=\"history\"]"); if(hb) hb.click(); }
+      const {appt, found} = newApptFrom(sh);
+      openAppt(appt, found.length ? "Filled in from your calendar – please check the details, add your questions and tap <b>Save</b>." : "Couldn't read the event details – please fill them in."); }; setTimeout(go,600); } } }catch(e){ console.warn(e); }
 // home-screen shortcut: "Start seizure timer"
 try{ const q=new URLSearchParams(location.search); if(q.get("start")==="1"){ history.replaceState(null,"",location.pathname); if(!active) $("#startBtn").click(); } }catch{}
 renderShareInfo();
