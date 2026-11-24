@@ -2515,12 +2515,23 @@ function openAppt(a){
     <textarea id="apOut" placeholder="e.g. Increase dose from next week. Review in 3 months.">${esc(a.outcome || "")}</textarea>
     <div class="note" style="margin-top:10px">The <b>appointment pack</b> is a PDF with these questions, space for notes, and a seizure report covering ${packDays(a) === 90 ? "the last 3 months" : `the ${packDays(a)} days since the previous appointment`}.</div>
     <div class="row" style="margin-top:10px"><button class="primary" id="apSend"><span class="em">📄</span> Send pack</button><button id="apDl"><span class="em">⬇️</span> Download pack</button></div>
+    <div class="row" style="margin-top:8px"><a class="btnlink" id="apGcal" href="#" target="_blank" rel="noopener" style="background:var(--panel2);color:var(--text)"><span class="em">📅</span> Add to Google Calendar</a><button id="apIcs"><span class="em">🗓️</span> Other calendar</button></div>
     <div class="dialog-btns">${!isNew && !ro ? `<button class="danger" id="apDel">Delete</button>` : `<button class="ghost" id="apNo">${ro ? "Close" : "Cancel"}</button>`}${ro ? "" : `<button class="primary" id="apSave">Save</button>`}</div>`);
   if(ro) document.querySelectorAll("#sheet input,#sheet textarea").forEach(x => x.disabled = true);
   const read = () => ({...a, date: new Date($("#apDate").value).getTime() || a.date, clinician: $("#apWho").value.trim(), questions: $("#apQs").value.split("\n").map(x => x.trim()).filter(Boolean), outcome: $("#apOut").value.trim()});
   if($("#apNo")) $("#apNo").onclick = hideSheet;
   if($("#apDel")) $("#apDel").onclick = () => confirmSheet("Delete this appointment?", "Its questions and notes will be removed for everyone on the team.", "Delete", () => delAppt(a.id));
   if($("#apSave")) $("#apSave").onclick = () => { saveAppt(read()); hideSheet(); toast("Appointment saved"); };
+  const calInfo = cur => { const t = `${settings.name ? settings.name + " – " : ""}${cur.clinician || "Appointment"}`, d = new Date(cur.date), e = new Date(cur.date + 3600e3), z = x => x.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    return {t, start: z(d), end: z(e), det: "Questions and the appointment pack are in Seizure Tracker (History → Appointments):\n" + location.origin + location.pathname.replace(/[^/]*$/, ""), loc: cur.clinician || ""}; };
+  const gcalHref = () => { const c = calInfo(read()); return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(c.t) + "&dates=" + c.start + "/" + c.end + "&details=" + encodeURIComponent(c.det) + "&location=" + encodeURIComponent(c.loc); };
+  $("#apGcal").href = gcalHref();
+  $("#apGcal").addEventListener("click", () => { $("#apGcal").href = gcalHref(); if(!ro) saveAppt(read()); });
+  ["#apDate", "#apWho"].forEach(sel => $(sel).addEventListener("input", () => { $("#apGcal").href = gcalHref(); }));
+  $("#apIcs").onclick = async () => { const cur = read(), c = calInfo(cur); if(!ro) saveAppt(cur);
+    const esc2 = v => String(v).replace(/[\\,;]/g, m => "\\" + m).replace(/\n/g, "\\n");
+    const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Seizure Tracker//EN","BEGIN:VEVENT","UID:" + cur.id + "@seizure-tracker","DTSTAMP:" + calInfo({date: Date.now()}).start,"DTSTART:" + c.start,"DTEND:" + c.end,"SUMMARY:" + esc2(c.t),"LOCATION:" + esc2(c.loc),"DESCRIPTION:" + esc2(c.det),"BEGIN:VALARM","TRIGGER:-P1D","ACTION:DISPLAY","DESCRIPTION:Appointment tomorrow – check your questions in Seizure Tracker","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+    toast((await saveFile("appointment.ics", new TextEncoder().encode(ics), "text/calendar")) ? "Calendar file saved – open it to add the appointment" : "Couldn't save the calendar file"); };
   const pack = () => { const cur = read(); return {cur, bytes: buildPdf(packDays(cur), {appt: cur})}; };
   $("#apDl").onclick = async () => { const {cur, bytes} = pack(); if(!ro) saveAppt(cur); toast((await saveFile(packName(cur), bytes, "application/pdf")) ? "Pack saved to Downloads" : "Couldn't save the pack"); };
   $("#apSend").onclick = async () => { const {cur, bytes} = pack(); if(!ro) saveAppt(cur);
@@ -2532,7 +2543,7 @@ function openAppt(a){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.23-37";
+const APP_VERSION="2026.11.24-38";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
