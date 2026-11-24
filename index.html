@@ -718,6 +718,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 <li><b>Don't rely on it alone.</b> Timers, alarms and reminders depend on the phone – battery, volume, silent mode, the screen being on and signal – and may not sound.</li>
 <li><b>Records are made by family and carers.</b> They may be incomplete or inaccurate and are not a clinical record. Check them before sharing.</li></ul>
       <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Using Seizure Tracker means you accept this. Full details are in the <a href="guide/#important" target="_blank" rel="noopener">getting started guide</a>.</p>
+      <a class="btnlink" href="guide/privacy.html" target="_blank" rel="noopener" style="display:flex;margin-top:12px;background:var(--panel2);color:var(--text)"><span class="em">🔒</span> Privacy notice</a>
     </div>
     <div class="note">General first-aid guidance (NHS / Epilepsy Action): call 999 if a seizure lasts more than 5 minutes, if one seizure follows another without recovery in between, if the child is injured, or if it's their first seizure. The child's own care plan takes priority – set the alarm to the time their plan gives.</div>
   </section>
@@ -2548,7 +2549,7 @@ function openAppt(a){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.24-39";
+const APP_VERSION="2026.11.24-40";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
