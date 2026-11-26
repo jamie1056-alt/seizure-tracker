@@ -28,8 +28,14 @@
       "url": "./index.html?start=1",
       "icons": [
         {
-          "src": "icon-v2-192.png",
-          "sizes": "192x192"
+          "src": "icon-start-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "icon-start-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }
