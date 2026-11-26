@@ -536,7 +536,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
       <h2>Overview</h2>
       <div class="stats">
         <div class="stat good"><span class="k-ic"><span class="em">✓</span></span><b id="sFree">–</b><span>seizure-free days</span></div>
-        <div class="stat"><span class="k-ic"><span class="em">⬆</span></span><b id="sBest">–</b><span>best streak (days)</span></div>
+        <div class="stat"><span class="k-ic"><span class="em">⬆</span></span><b id="sBest">–</b><span>longest seizure-free run (12&nbsp;months)</span></div>
         <div class="stat"><span class="k-ic"><span class="em">📅</span></span><b id="s30">0</b><span>last 30 days</span></div>
       </div>
       <div class="stats two" style="margin-top:8px">
@@ -2731,7 +2731,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.25-42";
+const APP_VERSION="2026.11.26-43";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
