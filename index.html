@@ -520,6 +520,12 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 #battWrap{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}
 #battWarn{margin:0;padding:6px 12px;border-radius:999px;background:#fff4d6;color:#7a4b00;font-weight:600;font-size:14px;width:max-content;max-width:100%}
 #timer.night #battWarn{background:#1a0a02!important}
+/* larger timer header */
+#timer .top,#recov .top{font-size:17px!important;font-weight:600;gap:8px;flex-wrap:wrap;align-items:center}
+#timer .top>span:last-child,#recov .top>span:last-child{display:flex;align-items:center;gap:8px}
+#tAlarmAt{font-size:16px!important;font-weight:700!important;padding:7px 14px!important}
+#nightBtn,#rNightBtn{font-size:16px!important;font-weight:600;padding:7px 14px!important;margin-left:0!important;min-height:38px!important}
+#rLasted{font-size:16px}
 </style>
 </head>
 <body>
@@ -1414,7 +1420,7 @@ function openTimer(){
   if(active && active.night===undefined){ active.night=nightOn(); persistActive(); }
   $("#timer").classList.remove("hidden","amber","alarm"); applyNight();
   $("#tStarted").textContent="Started "+fmtTime(active.start);
-  const am=settings.alertMin||18; $("#tAlarmAt").textContent=`Alarm at ${am}:00`;
+  const am=settings.alertMin||18; $("#tAlarmAt").textContent=`Alarm at ${am} min`;
   if(settings.plan){ $("#planBox").textContent=settings.plan; $("#planBox").classList.remove("hidden"); } else $("#planBox").classList.add("hidden");
   $("#alertBox").classList.add("hidden");
   if(active && elapsed()<(settings.alertMin||18)*60) active.muted=false;   // can only silence an alarm that is sounding
@@ -2747,7 +2753,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.26-48";
+const APP_VERSION="2026.11.26-49";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
