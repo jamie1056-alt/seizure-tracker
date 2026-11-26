@@ -516,7 +516,9 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 .stat b .unit{font-size:.42em;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:1px;white-space:nowrap}
 .logo{background:none!important;box-shadow:0 4px 12px rgba(91,63,216,.3)!important;overflow:hidden}
 .logo img{width:100%;height:100%;display:block}
-#battWarn{margin:6px auto 0;padding:6px 12px;border-radius:999px;background:#fff4d6;color:#7a4b00;font-weight:600;font-size:14px;width:max-content;max-width:100%}
+#timer #mid::before{content:"";flex:1 1 0}
+#battWrap{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}
+#battWarn{margin:0;padding:6px 12px;border-radius:999px;background:#fff4d6;color:#7a4b00;font-weight:600;font-size:14px;width:max-content;max-width:100%}
 #timer.night #battWarn{background:#1a0a02!important}
 </style>
 </head>
@@ -738,7 +740,6 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 
 <!-- TIMER -->
 <div id="timer" class="hidden">
-  <div id="battWarn" class="hidden"></div>
   <div class="top"><span id="tStarted">Started –</span><span><span id="tAlarmAt">Alarm at 18:00</span><button id="nightBtn" aria-label="Night mode">🌙 Night</button></span></div>
   <div id="clusterBox" class="hidden"></div>
   <div id="mid">
@@ -746,6 +747,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
     <div id="clockSub"></div>
     <div id="nextStep" class="hidden"></div>
     <div id="soundHint" class="hidden">Tap the screen once to turn on alarm sounds</div>
+    <div id="battWrap"><div id="battWarn" class="hidden"></div></div>
   </div>
   <div id="vnsBox" class="hidden"></div>
   <div id="stepBox" class="hidden"></div>
@@ -2745,7 +2747,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.26-47";
+const APP_VERSION="2026.11.26-48";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
