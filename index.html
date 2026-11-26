@@ -520,15 +520,16 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 #battWrap{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}
 #battWarn{margin:0;padding:6px 12px;border-radius:999px;background:#fff4d6;color:#7a4b00;font-weight:600;font-size:14px;width:max-content;max-width:100%}
 #timer.night #battWarn{background:#1a0a02!important}
-/* larger timer header */
-#timer .top,#recov .top{font-size:17px!important;font-weight:600;gap:8px;flex-wrap:wrap;align-items:center}
-#timer .top>span:last-child,#recov .top>span:last-child{display:flex;align-items:center;gap:8px}
-#tAlarmAt{font-size:16px!important;font-weight:700!important;padding:7px 14px!important}
-#nightBtn,#rNightBtn{font-size:16px!important;font-weight:600;padding:7px 14px!important;margin-left:0!important;min-height:38px!important}
-#rLasted{font-size:15px}
-#recov .top{flex-wrap:nowrap!important;font-size:15px!important}
-@media (max-height:660px){#rNightBtn{min-height:26px!important;padding:2px 9px!important}#recov{padding-top:calc(8px + env(safe-area-inset-top))!important;gap:6px!important}}
-@media (max-width:400px){#recov .top{font-size:14px!important}#rLasted{font-size:14px}#rNightBtn{font-size:14px!important;padding:5px 10px!important;min-height:32px!important}}
+/* timer / recovery header: info strip */
+#timer .tbar,#recov .tbar{display:flex!important;align-items:stretch!important;gap:8px!important;flex-wrap:nowrap!important;font-size:inherit!important;margin:0!important}
+.tbar .tinfo{flex:1 1 0;min-width:0;background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center}
+.tbar .lab{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.tbar #tStarted,.tbar #tAlarmAt,.tbar #rEnded,.tbar #rLasted{font-size:21px!important;font-weight:800!important;color:var(--text);line-height:1.15;background:none!important;border:0!important;padding:0!important;white-space:nowrap}
+.tbar .nbtn{flex:0 0 auto;width:62px;min-height:0!important;border-radius:14px!important;border:1px solid var(--line2)!important;background:var(--panel2)!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 0!important;margin:0!important;color:var(--text)}
+.tbar .nbtn .ni{font-size:20px;line-height:1}.tbar .nbtn .nl{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+#timer.night .tbar .tinfo,#recov.night .tbar .tinfo,#timer.night .tbar .nbtn,#recov.night .tbar .nbtn{background:#140403!important}
+@media (max-height:660px){#rClock{font-size:min(24vw,11vh)!important}#recov .tbar .tinfo{padding:2px 10px}#recov .tbar .nbtn{width:54px}#recov .tbar .nbtn .ni{font-size:16px}#recov .tbar #rEnded,#recov .tbar #rLasted{font-size:16px!important}#recov .tbar .lab{font-size:10px}}
+@media (max-height:660px){.tbar .tinfo{padding:4px 10px}.tbar #tStarted,.tbar #tAlarmAt,.tbar #rEnded,.tbar #rLasted{font-size:18px!important}.tbar .lab{font-size:10.5px}}
 </style>
 </head>
 <body>
@@ -749,7 +750,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 
 <!-- TIMER -->
 <div id="timer" class="hidden">
-  <div class="top"><span id="tStarted">Started –</span><span><span id="tAlarmAt">Alarm at 18:00</span><button id="nightBtn" aria-label="Night mode">🌙 Night</button></span></div>
+  <div class="top tbar"><div class="tinfo"><span class="lab">Started</span><span id="tStarted">–</span></div><div class="tinfo"><span class="lab">Alarm at</span><span id="tAlarmAt">18 min</span></div><button id="nightBtn" class="nbtn" aria-label="Night mode"><span class="ni">🌙</span><span class="nl">Night</span></button></div>
   <div id="clusterBox" class="hidden"></div>
   <div id="mid">
     <div id="clock">0:00</div>
@@ -784,7 +785,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 </div>
 
 <div id="recov" class="hidden">
-  <div class="top"><span id="rEnded">Seizure ended –</span><span><span id="rLasted"></span><button id="rNightBtn" aria-label="Night mode">🌙 Night</button></span></div>
+  <div class="top tbar"><div class="tinfo"><span class="lab">Ended</span><span id="rEnded">–</span></div><div class="tinfo"><span class="lab">Lasted</span><span id="rLasted">–</span></div><button id="rNightBtn" class="nbtn" aria-label="Night mode"><span class="ni">🌙</span><span class="nl">Night</span></button></div>
   <div class="lbl">Recovery time</div>
   <div id="rClock">0:00</div>
   <div id="rSub">Stay with them until they're back to their normal self.</div>
@@ -1407,7 +1408,8 @@ function nightOn(){ const p=nightPref(), h=new Date().getHours(); return p==="on
 function applyNight(){
   const t=!!(active && (active.night ?? nightOn())), r=!!(recov && (recov.night ?? (active?false:nightOn())));
   $("#timer").classList.toggle("night", t); $("#recov").classList.toggle("night", recov ? r : t);
-  $("#nightBtn").textContent = t ? "☀️ Day" : "🌙 Night"; $("#rNightBtn").textContent = $("#recov").classList.contains("night") ? "☀️ Day" : "🌙 Night";
+  const nb=(el,on)=>{ el.querySelector(".ni").textContent = on ? "☀️" : "🌙"; el.querySelector(".nl").textContent = on ? "Day" : "Night"; };
+  nb($("#nightBtn"), t); nb($("#rNightBtn"), $("#recov").classList.contains("night"));
 }
 $("#nightBtn").onclick=e=>{ e.stopPropagation(); if(!active) return; active.night=!(active.night ?? nightOn()); persistActive(); applyNight(); };
 $("#rNightBtn").onclick=e=>{ e.stopPropagation(); if(!recov) return; recov.night=!$("#recov").classList.contains("night"); ls.set(LOCAL_RECOV,recov); applyNight(); };
@@ -1422,8 +1424,8 @@ function openTimer(){
   setTimeout(setEmergency,0); checkBattery();
   if(active && active.night===undefined){ active.night=nightOn(); persistActive(); }
   $("#timer").classList.remove("hidden","amber","alarm"); applyNight();
-  $("#tStarted").textContent="Started "+fmtTime(active.start);
-  const am=settings.alertMin||18; $("#tAlarmAt").textContent=`Alarm at ${am} min`;
+  $("#tStarted").textContent=fmtTime(active.start);
+  const am=settings.alertMin||18; $("#tAlarmAt").textContent=`${am} min`;
   if(settings.plan){ $("#planBox").textContent=settings.plan; $("#planBox").classList.remove("hidden"); } else $("#planBox").classList.add("hidden");
   $("#alertBox").classList.add("hidden");
   if(active && elapsed()<(settings.alertMin||18)*60) active.muted=false;   // can only silence an alarm that is sounding
@@ -1602,7 +1604,7 @@ function startRecovery(rec, night){ recov={id:rec.id, endAt:rec.start+rec.durati
 function openRecovery(){
   setTimeout(setEmergency,0);
   $("#recov").classList.remove("hidden"); keepAwake(true); applyNight();
-  $("#rEnded").textContent="Seizure ended "+fmtTime(recov.endAt); $("#rLasted").textContent="Lasted "+fmtDur(recov.lasted);
+  $("#rEnded").textContent=fmtTime(recov.endAt); $("#rLasted").textContent=fmtDur(recov.lasted);
   clearInterval(rTick); rTick=setInterval(updRecov,500); updRecov(); renderRecLog();
 }
 function recElapsed(){ return (Date.now()-recov.endAt)/1000; }
@@ -2756,7 +2758,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.26-50";
+const APP_VERSION="2026.11.26-51";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
