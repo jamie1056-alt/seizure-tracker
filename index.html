@@ -514,12 +514,16 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 .consent a{color:var(--accent);font-weight:600}
 .consent.shake{animation:shake .4s}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .stat b .unit{font-size:.42em;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:1px;white-space:nowrap}
+.logo{background:none!important;box-shadow:0 4px 12px rgba(91,63,216,.3)!important;overflow:hidden}
+.logo img{width:100%;height:100%;display:block}
+#battWarn{margin:6px auto 0;padding:6px 12px;border-radius:999px;background:#fff4d6;color:#7a4b00;font-weight:600;font-size:14px;width:max-content;max-width:100%}
+#timer.night #battWarn{background:#1a0a02!important}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><div class="logo"><span class="em">⏱</span></div>
+    <div class="brand"><div class="logo"><img src="icon-v2-192.png" alt=""></div>
       <div style="min-width:0"><h1 id="title">Seizure Tracker</h1>
       <button id="childSwitch" class="hidden"></button>
       <div class="sub" id="syncState">Loading…</div></div>
@@ -734,6 +738,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 
 <!-- TIMER -->
 <div id="timer" class="hidden">
+  <div id="battWarn" class="hidden"></div>
   <div class="top"><span id="tStarted">Started –</span><span><span id="tAlarmAt">Alarm at 18:00</span><button id="nightBtn" aria-label="Night mode">🌙 Night</button></span></div>
   <div id="clusterBox" class="hidden"></div>
   <div id="mid">
@@ -782,7 +787,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 </div>
 <div id="onboard" class="hidden">
   <div class="obwrap">
-    <div class="logo obl"><span class="em">⏱</span></div>
+    <div class="logo obl"><img src="icon-v2-192.png" alt=""></div>
     <h2>Seizure Tracker</h2>
     <p id="obIntro" class="obintro"></p>
     <div class="obcard" id="obLocal">
@@ -1395,8 +1400,15 @@ function applyNight(){
 }
 $("#nightBtn").onclick=e=>{ e.stopPropagation(); if(!active) return; active.night=!(active.night ?? nightOn()); persistActive(); applyNight(); };
 $("#rNightBtn").onclick=e=>{ e.stopPropagation(); if(!recov) return; recov.night=!$("#recov").classList.contains("night"); ls.set(LOCAL_RECOV,recov); applyNight(); };
+async function checkBattery(){
+  const w=$("#battWarn"); w.classList.add("hidden");
+  try{ if(!navigator.getBattery) return; const b=await navigator.getBattery();
+    const show=()=>{ const low=!b.charging && b.level<=0.15; w.classList.toggle("hidden", !low || !active); if(low) w.textContent=`🔋 Battery ${Math.round(b.level*100)}% – plug in if you can`; };
+    show(); if(!b.__stWired){ b.__stWired=true; b.addEventListener("levelchange",show); b.addEventListener("chargingchange",show); }
+  }catch{}
+}
 function openTimer(){
-  setTimeout(setEmergency,0);
+  setTimeout(setEmergency,0); checkBattery();
   if(active && active.night===undefined){ active.night=nightOn(); persistActive(); }
   $("#timer").classList.remove("hidden","amber","alarm"); applyNight();
   $("#tStarted").textContent="Started "+fmtTime(active.start);
@@ -2733,7 +2745,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.26-46";
+const APP_VERSION="2026.11.26-47";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
