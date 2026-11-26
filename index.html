@@ -513,6 +513,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 .consent input{width:22px!important;height:22px;flex:none;margin-top:1px}
 .consent a{color:var(--accent);font-weight:600}
 .consent.shake{animation:shake .4s}@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.stat b .unit{font-size:.42em;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:1px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -530,13 +531,13 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
   <section id="view-home">
     <div id="roBanner" class="ro-banner hidden"></div>
     <div class="hello"><b id="helloTxt">Hello</b><span id="helloDate"></span></div>
-    <button class="big-start" id="startBtn"><span class="bs-ic"><span class="em">⏱</span></span><span>Seizure started<small>Tap to start the emergency timer</small></span></button>
+    <button class="big-start" id="startBtn"><span class="bs-ic"><span class="em">⏱</span></span><span>Seizure now<small>Tap to start the timer</small></span></button>
     <div id="backupNag"></div>
     <div class="card" style="--acc:#7fd8ff">
       <h2>Overview</h2>
       <div class="stats">
-        <div class="stat good"><span class="k-ic"><span class="em">✓</span></span><b id="sFree">–</b><span>seizure-free days</span></div>
-        <div class="stat"><span class="k-ic"><span class="em">⬆</span></span><b id="sBest">–</b><span>longest seizure-free run (12&nbsp;months)</span></div>
+        <div class="stat good"><span class="k-ic"><span class="em">✓</span></span><b id="sFree">–</b><span>seizure-free</span></div>
+        <div class="stat"><span class="k-ic"><span class="em">⬆</span></span><b id="sBest">–</b><span>longest run</span></div>
         <div class="stat"><span class="k-ic"><span class="em">📅</span></span><b id="s30">0</b><span>last 30 days</span></div>
       </div>
       <div class="stats two" style="margin-top:8px">
@@ -1040,8 +1041,9 @@ document.querySelectorAll(".tile[data-go]").forEach(t=>t.onclick=()=>{
 function render(){
   $("#title").innerHTML = settings.name ? `${esc(settings.name)}<span class="tsub">Seizure Log</span>` : "Seizure Tracker";
   const w7=within(7), w30=within(30), all=sorted();
-  $("#s30").textContent=w30.length;
-  const st=streaks(); $("#sFree").textContent = st.current==null ? "–" : st.current; $("#sBest").textContent = st.best==null ? "–" : st.best;
+  const withUnit=(n,one,many)=>`${n}<small class="unit"> ${n===1?one:many}</small>`;
+  $("#s30").innerHTML=withUnit(w30.length,"seizure","seizures");
+  const st=streaks(); $("#sFree").innerHTML = st.current==null ? "–" : withUnit(st.current,"day","days"); $("#sBest").innerHTML = st.best==null ? "–" : withUnit(st.best,"day","days");
   const durs=w30.map(s=>s.durationSec||0).filter(Boolean);
   $("#sAvg").textContent = durs.length ? fmtDur(durs.reduce((a,b)=>a+b,0)/durs.length) : "–";
   $("#sMax").textContent = durs.length ? fmtDur(Math.max(...durs)) : "–";
@@ -2731,7 +2733,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.26-43";
+const APP_VERSION="2026.11.26-45";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
