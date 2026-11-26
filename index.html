@@ -522,7 +522,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 #timer.night #battWarn{background:#1a0a02!important}
 /* timer / recovery header: info strip */
 #timer .tbar,#recov .tbar{display:flex!important;align-items:stretch!important;gap:8px!important;flex-wrap:nowrap!important;font-size:inherit!important;margin:0!important}
-.tbar .tinfo{flex:1 1 0;min-width:0;background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center}
+.tbar .tinfo{flex:1 1 0;min-width:0;background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
 .tbar .lab{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);line-height:1.2}
 .tbar #tStarted,.tbar #tAlarmAt,.tbar #rEnded,.tbar #rLasted{font-size:21px!important;font-weight:800!important;color:var(--text);line-height:1.15;background:none!important;border:0!important;padding:0!important;white-space:nowrap}
 .tbar .nbtn{flex:0 0 auto;width:62px;min-height:0!important;border-radius:14px!important;border:1px solid var(--line2)!important;background:var(--panel2)!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 0!important;margin:0!important;color:var(--text)}
@@ -2758,7 +2758,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.26-51";
+const APP_VERSION="2026.11.26-52";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
