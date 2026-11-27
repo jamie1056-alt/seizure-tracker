@@ -552,7 +552,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
   <section id="view-home">
     <div id="roBanner" class="ro-banner hidden"></div>
     <div class="hello"><b id="helloTxt">Hello</b><span id="helloDate"></span></div>
-    <button class="big-start" id="startBtn"><span class="bs-ic"><span class="em">⏱</span></span><span>Seizure now<small>Tap to start the timer</small></span></button>
+    <button class="big-start" id="startBtn"><span class="bs-ic"><span class="em">⏱</span></span><span>Log Seizure<small>Tap To Start The Timer</small></span></button>
     <div id="backupNag"></div>
     <div class="card" style="--acc:#7fd8ff">
       <h2>Overview</h2>
@@ -2769,7 +2769,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.27-55";
+const APP_VERSION="2026.11.27-56";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
