@@ -530,6 +530,11 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
 #timer.night .tbar .tinfo,#recov.night .tbar .tinfo,#timer.night .tbar .nbtn,#recov.night .tbar .nbtn{background:#140403!important}
 @media (max-height:660px){#rClock{font-size:min(24vw,11vh)!important}#recov .tbar .tinfo{padding:2px 10px}#recov .tbar .nbtn{width:54px}#recov .tbar .nbtn .ni{font-size:16px}#recov .tbar #rEnded,#recov .tbar #rLasted{font-size:16px!important}#recov .tbar .lab{font-size:10px}}
 @media (max-height:660px){.tbar .tinfo{padding:4px 10px}.tbar #tStarted,.tbar #tAlarmAt,.tbar #rEnded,.tbar #rLasted{font-size:18px!important}.tbar .lab{font-size:10.5px}}
+/* bigger, centred start button */
+.big-start{justify-content:center!important;font-size:clamp(28px,8.2vw,36px)!important;gap:clamp(16px,5vw,24px)!important;min-height:clamp(150px,22vh,200px)!important;line-height:1.1}
+.big-start .bs-ic{width:clamp(80px,22vw,100px)!important;height:clamp(80px,22vw,100px)!important;border-radius:22px!important}
+.big-start .bs-ic svg.i{width:62%!important;height:62%!important}
+.big-start small{font-size:clamp(16px,4.4vw,19px)!important;margin-top:6px!important}
 </style>
 </head>
 <body>
@@ -2764,7 +2769,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.27-54";
+const APP_VERSION="2026.11.27-55";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
