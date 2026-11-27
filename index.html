@@ -709,7 +709,7 @@ html[data-theme="light"] body:not(.emergency) .obcard{box-shadow:0 1px 2px rgba(
     <a class="btnlink primary" href="guide/" target="_blank" rel="noopener" style="margin:0 0 12px;display:flex"><span class="em">📘</span> Getting started guide</a>
     <a class="btnlink" id="feedbackBtn" href="mailto:" style="margin:0 0 12px;display:flex;background:var(--panel2);color:var(--text);border:1.5px solid rgba(91,63,216,.35)"><span class="em">💬</span> Send feedback or report a problem</a>
     <div class="note">
-      <b>Install on Android:</b> open this page in Chrome, tap the ⋮ menu, then <b>Add to Home screen</b>. It will open full screen like an app.<br><br>
+      <b>Install on Android:</b> open this page in Chrome, tap the ⋮ menu, then <b>Install app</b> (or <b>Add to Home screen</b>). It will open full screen like an app.<br><br>
       Keep the timer screen open during a seizure – the alarm sounds from the phone while the page is on screen.
     </div>
     <div class="card" style="--acc:#ffd27a">
@@ -1103,7 +1103,7 @@ const LOCAL_BK="st_lastbackup_v1", LOCAL_BKS="st_backupsnooze_v1";
 function renderBackupNag(){
   const el=$("#backupNag"); if(!el) return;
   const last=ls.get(LOCAL_BK,0), snooze=ls.get(LOCAL_BKS,0), due=Date.now()-last>30*86400e3;
-  const lb=$("#lastBackup"); if(lb) lb.textContent = last ? `Last backup: ${fmtDate(last)}` : (mode==="cloud" ? "Your log is also saved to your Claude account." : "No backup downloaded yet.");
+  const lb=$("#lastBackup"); if(lb) lb.textContent = last ? `Last backup: ${fmtDate(last)}` : (backend==="firebase" ? "Your log is also saved securely to your account (stored by Google in London), so it's safe if this phone is lost." : mode==="cloud" ? "Your log is also saved to your Claude account." : "No backup downloaded yet.");
   if(mode!=="local" || !seizures.length || !due || Date.now()<snooze){ el.innerHTML=""; return; }
   el.innerHTML=`<div class="card nag"><h2>Backup reminder</h2><p style="margin:0 0 12px;font-size:14px;color:#e9d3a8">${last?`It's been over a month since the last backup.`:`The log is only stored on this phone.`} Download a copy so it isn't lost if the phone is.</p>
     <div class="row"><button class="primary" id="nagBk">${I("⬇")} Download backup</button><button id="nagLater">Remind me next week</button></div></div>`;
@@ -2758,7 +2758,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.26-52";
+const APP_VERSION="2026.11.27-53";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
