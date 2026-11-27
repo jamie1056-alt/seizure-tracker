@@ -130,7 +130,7 @@ textarea{min-height:80px;resize:vertical}
 .vidrow button{padding:8px 12px;font-size:14px}
 .player{position:relative;margin-top:10px}
 .player video{width:100%;border-radius:12px;background:#000}
-.player .el{position:absolute;top:8px;right:8px;background:#000b;color:#fff;padding:3px 8px;border-radius:8px;font-size:13px;font-weight:700}
+.player .el{position:absolute;bottom:52px;left:8px;background:#000a;color:#fff;padding:2px 7px;border-radius:999px;font-size:12px;font-weight:700}
 #tAlarmAt{background:var(--panel2);border-radius:999px;padding:4px 10px;color:var(--text)}
 #cancelBtn{background:transparent;color:var(--muted);padding:4px 0;font-size:14px;text-decoration:underline}
 #stopBtn{grid-column:1/-1;background:var(--green);color:#0b1f14;font-size:22px;padding:24px!important}
@@ -1206,19 +1206,23 @@ function overlayStream(){
     const vt=cam.stream.getVideoTracks()[0], st=vt&&vt.getSettings?vt.getSettings():{};
     let w=st.width||v.videoWidth||1280, h=st.height||v.videoHeight||720; const sc=Math.min(1,960/Math.max(w,h)); w=Math.round(w*sc); h=Math.round(h*sc);
     cv.width=w; cv.height=h; const g=cv.getContext("2d");
-    const pad=Math.round(h*0.03), fs=Math.max(14,Math.round(h*0.055));
+    const base=Math.min(w,h), pad=Math.round(base*0.022), fs0=Math.max(12,Math.round(base*0.042));
     const draw=()=>{
       if(!cam.drawing) return;
       try{ g.drawImage(v,0,0,w,h); }catch{}
-      const e=active?elapsed():0, now=new Date();
-      const line1=`● SEIZURE ${fmtDur(e)}`, n=(active&&active.vnsAtSec||[]).length;
-      const line2=`${now.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})} ${now.toLocaleTimeString("en-GB")}${n?` · VNS ${n}/${vnsMax()}`:""}${active&&active.rescueAtSec!=null?" · Rescue med given":""}`;
-      g.font=`800 ${fs}px Inter,system-ui,sans-serif`; const w1=g.measureText(line1).width;
-      g.font=`600 ${Math.round(fs*0.6)}px Inter,system-ui,sans-serif`; const w2=g.measureText(line2).width;
-      const bw=Math.max(w1,w2)+pad*2, bh=fs*1.9+pad;
-      g.fillStyle="rgba(10,14,28,.72)"; g.beginPath(); (g.roundRect?g.roundRect(pad,pad,bw,bh,pad*.6):g.rect(pad,pad,bw,bh)); g.fill();
-      g.fillStyle="#ff5a5f"; g.font=`800 ${fs}px Inter,system-ui,sans-serif`; g.textBaseline="top"; g.fillText(line1,pad*2,pad*1.4);
-      g.fillStyle="#e8edf7"; g.font=`600 ${Math.round(fs*0.6)}px Inter,system-ui,sans-serif`; g.fillText(line2,pad*2,pad*1.4+fs*1.15);
+      const e=active?elapsed():0, now=new Date(), n=(active&&active.vnsAtSec||[]).length;
+      const tPart=fmtDur(e);
+      const rest=[`${now.toLocaleDateString("en-GB",{day:"numeric",month:"short"})} ${now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}`, n?`VNS ${n}/${vnsMax()}`:"", active&&active.rescueAtSec!=null?"Rescue med ✓":""].filter(Boolean).join("  ·  ");
+      // fit on one line: shrink the font if needed
+      let fs=fs0; const maxW=w-pad*4;
+      const widths=()=>{ g.font=`800 ${fs}px Inter,system-ui,sans-serif`; const a=g.measureText(tPart).width; g.font=`600 ${Math.round(fs*.78)}px Inter,system-ui,sans-serif`; const b=g.measureText(rest).width; return {a,b,t:fs*0.9+a+fs*0.7+b}; };
+      let m=widths(); while(m.t>maxW && fs>10){ fs--; m=widths(); }
+      const bh=Math.round(fs*1.7), bw=Math.round(m.t+pad*2), x=pad, y=pad;
+      g.fillStyle="rgba(8,10,20,.62)"; g.beginPath(); (g.roundRect?g.roundRect(x,y,bw,bh,bh/2):g.rect(x,y,bw,bh)); g.fill();
+      const cy=y+bh/2; g.textBaseline="middle";
+      g.fillStyle="#ff4d4f"; g.beginPath(); g.arc(x+pad+fs*0.3,cy,fs*0.28,0,Math.PI*2); g.fill();
+      g.fillStyle="#ffffff"; g.font=`800 ${fs}px Inter,system-ui,sans-serif`; g.fillText(tPart,x+pad+fs*0.9,cy+1);
+      g.fillStyle="rgba(232,237,247,.9)"; g.font=`600 ${Math.round(fs*.78)}px Inter,system-ui,sans-serif`; g.fillText(rest,x+pad+fs*0.9+m.a+fs*0.7,cy+1);
       cam.raf=requestAnimationFrame(draw);
     };
     cam.drawing=true; draw();
@@ -1228,7 +1232,7 @@ function overlayStream(){
 }
 function beginRecorder(){
   const mime=pickMime(); cam.chunks=[]; cam.mime=mime||"video/webm";
-  const src=overlayStream()||cam.stream;
+  const ov=overlayStream(); cam.burned=!!ov; const src=ov||cam.stream;
   cam.rec = new MediaRecorder(src, mime?{mimeType:mime, videoBitsPerSecond:2500000}:{});
   cam.offset=Math.round(elapsed()); cam.t0=Date.now();
   cam.rec.ondataavailable=e=>{ if(e.data && e.data.size) cam.chunks.push(e.data); };
@@ -1267,7 +1271,7 @@ function fillThumbs(){
   });
 }
 async function storeClip(blob, offset, dur){
-  const key=uid(), clip={key, offsetSec:offset, durationSec:dur||null, type:blob.type||"video/mp4"};
+  const key=uid(), clip={key, offsetSec:offset, durationSec:dur||null, type:blob.type||"video/mp4", burned:!!cam.burned};
   const thumb=await makeThumb(blob);
   try{ await VDB.put({key, blob, thumb, type:clip.type, created:Date.now()}); clip.stored=true; thumbCache[key]=thumb||null; }
   catch(e){ console.warn(e); clip.stored=false; }
@@ -1324,9 +1328,11 @@ async function playClip(clip){
   const box=document.getElementById("pl-"+clip.key);
   if(!blob){ box.innerHTML=`<div class="note">This video isn't on this phone (it was recorded on another device or the app's storage was cleared).</div>`; return; }
   const url=URL.createObjectURL(blob);
-  box.innerHTML=`<div class="player"><video controls playsinline src="${url}"></video><span class="el">Seizure time ${fmtDur(clip.offsetSec)}</span></div>`;
+  // older clips already have the seizure clock burned into the picture, so no extra label on top
+  const showEl = clip.burned === false;
+  box.innerHTML=`<div class="player"><video controls playsinline src="${url}"></video>${showEl?`<span class="el">Seizure time ${fmtDur(clip.offsetSec)}</span>`:""}</div>`;
   const v=box.querySelector("video"), el=box.querySelector(".el");
-  v.ontimeupdate=()=>{ el.textContent="Seizure time "+fmtDur(clip.offsetSec+v.currentTime); };
+  if(el) v.ontimeupdate=()=>{ el.textContent="Seizure time "+fmtDur(clip.offsetSec+v.currentTime); };
   v.play().catch(()=>{});
 }
 async function saveClip(rec, clip, i){
@@ -2758,7 +2764,7 @@ function openAppt(a, note){
 $("#apptAdd").onclick = () => openAppt(null);
 
 // ---------- feedback ----------
-const APP_VERSION="2026.11.27-53";
+const APP_VERSION="2026.11.27-54";
 const FEEDBACK_TO="jamie1056@gmail.com";
 function feedbackHref(){
   const ua=navigator.userAgent, am=ua.match(/(Android [\d.]+);\s*([^;)]+)\)/), phone=am?`${am[1]}${am[2]&&am[2]!=="K"?" – "+am[2]:""}`:(/iPhone|iPad/.test(ua)?(ua.match(/OS [\d_]+/)||["iPhone"])[0].replace(/_/g,".")+" (iPhone)":"Computer");
